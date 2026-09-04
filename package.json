@@ -1,0 +1,45 @@
+{
+  "name": "classi.js",
+  "version": "0.1.0",
+  "description": "Unofficial Classi (classi.jp) API client for Node.js",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test tests/integration.test.mjs",
+    "example:login": "node examples/login.mjs",
+    "example:tasks": "node examples/tasks.mjs"
+  },
+  "keywords": [
+    "classi",
+    "classi.jp",
+    "api",
+    "client",
+    "unofficial",
+    "nodejs"
+  ],
+  "author": {
+    "name": "Nanachi",
+    "url": "https://github.com/n4n45h1"
+  },
+  "contributors": [
+    {
+      "name": "GLM 5.3 Flash",
+      "url": "https://z.ai"
+    }
+  ],
+  "license": "MIT"
+}

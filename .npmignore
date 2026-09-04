@@ -1,0 +1,9 @@
+node_modules/
+examples/session.json
+src/
+tests/
+examples/
+tsconfig.json
+*.log
+.DS_Store
+.gitignore
