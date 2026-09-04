@@ -75,7 +75,7 @@ export class CookieJar {
     const host = requestUrl.hostname
     const matches = this.cookies.filter((c) => {
       if (c.secure && requestUrl.protocol !== "https:") return false
-      if (c.hostOnly ? c.domain !== host : !host.endsWith(c.domain)) return false
+      if (c.hostOnly ? c.domain !== host : !(host === c.domain || host.endsWith(`.${c.domain}`))) return false
       const reqPath = requestUrl.pathname || "/"
       if (!reqPath.startsWith(c.path)) return false
       if (c.path !== "/" && c.path.endsWith("/") === false && !reqPath.startsWith(c.path)) return false

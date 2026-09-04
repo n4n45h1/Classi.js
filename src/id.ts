@@ -28,12 +28,15 @@ export class IdApi {
 
   async loginMethods(username: string): Promise<LoginMethod[]> {
     const token = await this.csrf()
-    const { data } = await this.http.request<{ success: boolean; data: LoginMethod[] }>(
+    const res = await this.http.request<{ success: boolean; data: LoginMethod[] }>(
       "POST",
       `${IDAPI}/login_methods`,
       { origin: ID, csrf: true, csrfToken: token, json: { username } }
     )
-    return data?.data ?? []
+    if (res.status >= 400 || !res.data?.success || !Array.isArray(res.data.data)) {
+      throw new ClassiError("failed to fetch login methods", res.status, `${IDAPI}/login_methods`, res.data)
+    }
+    return res.data.data
   }
 
   async login({ username, password, saveId = false }: Credentials & { saveId?: boolean }): Promise<LoginResult> {
@@ -75,12 +78,15 @@ export class IdApi {
   }
 
   async myStatuses(): Promise<IdApiStatus> {
-    const { data } = await this.http.request<{ success: boolean; data: IdApiStatus }>(
+    const res = await this.http.request<{ success: boolean; data: IdApiStatus }>(
       "GET",
       `${IDAPI}/my/statuses`,
       { origin: ID }
     )
-    return data.data
+    if (res.status >= 400 || !res.data?.success || !res.data?.data) {
+      throw new ClassiError("failed to fetch account statuses", res.status, `${IDAPI}/my/statuses`, res.data)
+    }
+    return res.data.data
   }
 
   async changeUsername(currentPassword: string, newUsername: string): Promise<void> {
