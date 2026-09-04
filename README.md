@@ -1,5 +1,6 @@
-# classi.js
 
+![Classi-js-unofficial-img](./classi-js-unofficial.png)
+# classi.js
 Classi (classi.jp) を Node.js / TypeScript から扱うための、**非公式**のAPIクライアントです 
 
 ログイン、課題(タスクトレーニング)の取得と回答送信、通知やグループメッセージの取得など、
