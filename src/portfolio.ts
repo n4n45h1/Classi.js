@@ -36,7 +36,7 @@ export class PortfolioApi {
       origin: PORT,
       json,
     })
-    if (res.status >= 400) throw new ClassiError(`portfolio api error: ${path}`, res.status, path, res.data)
+    if (res.status < 200 || res.status >= 300) throw new ClassiError(`portfolio api error: ${path}`, res.status, path, res.data)
     return res.data
   }
 
@@ -83,27 +83,27 @@ export class KarteApi {
       origin: KARTE,
       json,
     })
-    if (res.status >= 400) throw new ClassiError(`karte api error: ${path}`, res.status, path, res.data)
+    if (res.status < 200 || res.status >= 300) throw new ClassiError(`karte api error: ${path}`, res.status, path, res.data)
     return res.data
   }
 
   tests(userId: number | string, kind: number): Promise<KarteTestSummary[]> {
-    return this.call("GET", `/api/users/${userId}/tests?kind=${kind}`)
+    return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/tests?kind=${kind}`)
   }
 
   testDetail(userId: number | string, examId: string): Promise<unknown> {
-    return this.call("GET", `/api/users/${userId}/tests/${encodeURIComponent(examId)}`)
+    return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/tests/${encodeURIComponent(examId)}`)
   }
 
   subjectLearningReports(userId: number | string): Promise<unknown> {
-    return this.call("GET", `/api/users/${userId}/subject_learning_reports`)
+    return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/subject_learning_reports`)
   }
 
   pathways(userId: number | string, type = 1): Promise<unknown> {
-    return this.call("GET", `/api/users/${userId}/pathways?type=${type}`)
+    return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/pathways?type=${type}`)
   }
 
   questionnaires(userId: number | string, formatType = 1): Promise<unknown> {
-    return this.call("GET", `/api/users/${userId}/questionnaires?format_type=${formatType}`)
+    return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/questionnaires?format_type=${formatType}`)
   }
 }

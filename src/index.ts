@@ -1,5 +1,5 @@
 export { ClassiClient, type ClassiClientOptions } from "./client.js"
-export { ClassiError } from "./http.js"
+export { ClassiError, type SessionData } from "./http.js"
 export { CookieJar } from "./cookies.js"
 export { IdApi, type Credentials, type LoginResult } from "./id.js"
 export {

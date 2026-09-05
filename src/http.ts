@@ -86,7 +86,8 @@ export class Http {
       body,
       redirect: "manual",
     })
-    const setCookies = res.headers.getSetCookie?.() ?? []
+    const setCookies = res.headers.getSetCookie?.() ??
+      (res.headers.get("set-cookie")?.split(/,(?=\s*[^;,\s=]+=)/) ?? [])
     if (setCookies.length) this.jar.setFromResponse(setCookies, target)
 
     if (opts.raw) {
@@ -94,7 +95,7 @@ export class Http {
     }
     const text = await res.text()
     let data: unknown = text
-    if (text && (text.startsWith("{") || text.startsWith("["))) {
+    if (text.trim()) {
       try {
         data = JSON.parse(text)
       } catch {

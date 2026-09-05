@@ -19,7 +19,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node --test tests/integration.test.mjs",
+    "test": "npm run build && node --test tests/*.test.mjs",
+    "prepack": "npm run build",
     "example:login": "node examples/login.mjs",
     "example:tasks": "node examples/tasks.mjs"
   },
@@ -41,5 +42,8 @@
       "url": "https://z.ai"
     }
   ],
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
 }
