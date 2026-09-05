@@ -38,7 +38,7 @@ export class PlatformApi {
       origin: PLAT,
       json,
     })
-    if (res.status >= 400) throw new ClassiError(`platform api error: ${path}`, res.status, path, res.data)
+    if (res.status < 200 || res.status >= 300) throw new ClassiError(`platform api error: ${path}`, res.status, path, res.data)
     return res.data
   }
 
@@ -95,15 +95,15 @@ export class PlatformApi {
   }
 
   removeBookmark(messageId: string): Promise<unknown> {
-    return this.call("DELETE", `/api/v2/groups/bookmarks?message_id=${messageId}`)
+    return this.call("DELETE", `/api/v2/groups/bookmarks?message_id=${encodeURIComponent(messageId)}`)
   }
 
   markSeen(messageId: string): Promise<unknown> {
-    return this.call("POST", `/api/v3/group_messages/${messageId}/mimashita`)
+    return this.call("POST", `/api/v3/group_messages/${encodeURIComponent(messageId)}/mimashita`)
   }
 
   unmarkSeen(messageId: string): Promise<unknown> {
-    return this.call("DELETE", `/api/v3/group_messages/${messageId}/mimashita`)
+    return this.call("DELETE", `/api/v3/group_messages/${encodeURIComponent(messageId)}/mimashita`)
   }
 
   taskList(p0 = 0, p1 = 0, p2 = 0, limit = 20): Promise<unknown> {
@@ -111,7 +111,7 @@ export class PlatformApi {
   }
 
   calendarEvents(startAt: string, endAt: string): Promise<unknown> {
-    return this.call("GET", `/api/event/list?start_at=${startAt}&end_at=${endAt}`)
+    return this.call("GET", `/api/event/list?start_at=${encodeURIComponent(startAt)}&end_at=${encodeURIComponent(endAt)}`)
   }
 
   cbankList(page = 1): Promise<unknown> {

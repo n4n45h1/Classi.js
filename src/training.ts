@@ -11,7 +11,6 @@ import type {
   TopicProgress,
 } from "./types.js"
 
-const TRAIN = "https://training.classi.jp"
 const API = "https://training-api.classi.jp/api"
 const ORIGIN = "https://training.classi.jp"
 const REF = "https://training.classi.jp/student/"
@@ -38,11 +37,11 @@ export class TrainingApi {
   private async csrf(): Promise<string> {
     const cached = this.http.csrfTokens["training"]
     if (cached) return cached
-    const { data } = await this.http.request<{ token: string }>("GET", `${API}/csrf_token`, {
+    const { status, data } = await this.http.request<{ token: string }>("GET", `${API}/csrf_token`, {
       origin: ORIGIN,
       referer: REF,
     })
-    if (!data?.token) throw new ClassiError("failed to obtain training csrf token", 0, `${API}/csrf_token`, data)
+    if (status < 200 || status >= 300 || typeof data?.token !== "string" || !data.token) throw new ClassiError("failed to obtain training csrf token", status, `${API}/csrf_token`, data)
     this.http.csrfTokens["training"] = data.token
     return data.token
   }
@@ -61,11 +60,11 @@ export class TrainingApi {
         json,
       })
     let res = await attempt(method === "GET" ? undefined : await this.csrf())
-    if (res.status === 422 || res.status === 401) {
+    if (method !== "GET" && res.status === 422) {
       this.invalidateCsrf()
       res = await attempt(await this.csrf())
     }
-    if (res.status >= 400) {
+    if (res.status < 200 || res.status >= 300) {
       throw new ClassiError(`training api error: ${path}`, res.status, path, res.data)
     }
     return res.data

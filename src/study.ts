@@ -29,7 +29,7 @@ export class StudyApi {
       referer: "https://study.classi.jp/",
       json,
     })
-    if (res.status >= 400) throw new ClassiError(`study api error: ${path}`, res.status, path, res.data)
+    if (res.status < 200 || res.status >= 300) throw new ClassiError(`study api error: ${path}`, res.status, path, res.data)
     return res.data
   }
 
@@ -46,23 +46,23 @@ export class StudyApi {
   }
 
   dailyReport(date: string): Promise<unknown> {
-    return this.call("GET", `/study/my_report/daily?date=${date}`)
+    return this.call("GET", `/study/my_report/daily?date=${encodeURIComponent(date)}`)
   }
 
   reportForm(date: string): Promise<StudyReportForm> {
-    return this.call<StudyReportForm>("GET", `/study/my_report/form?date=${date}`)
+    return this.call<StudyReportForm>("GET", `/study/my_report/form?date=${encodeURIComponent(date)}`)
   }
 
   saveReportForm(date: string, form: StudyReportForm): Promise<void> {
-    return this.call("PUT", `/study/my_report/form?date=${date}`, form)
+    return this.call("PUT", `/study/my_report/form?date=${encodeURIComponent(date)}`, form)
   }
 
   recordedDates(month: string): Promise<string[]> {
-    return this.call("GET", `/study/my_report/recorded_dates?month=${month}`)
+    return this.call("GET", `/study/my_report/recorded_dates?month=${encodeURIComponent(month)}`)
   }
 
   ranking(kind: "classroom" | "club" | "grade", date: string): Promise<unknown> {
-    return this.call("GET", `/study/ranking/${kind}/daily?date=${date}`)
+    return this.call("GET", `/study/ranking/${kind}/daily?date=${encodeURIComponent(date)}`)
   }
 
   targetGtz(): Promise<TargetGtz> {

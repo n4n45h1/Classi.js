@@ -17,11 +17,11 @@ export class IdApi {
   constructor(private http: Http) {}
 
   private async csrf(): Promise<string> {
-    const { data } = await this.http.request<{ success: boolean; data: string }>("GET", `${IDAPI}/csrf_token`, {
+    const { status, data } = await this.http.request<{ success: boolean; data: string }>("GET", `${IDAPI}/csrf_token`, {
       origin: ID,
     })
-    if (!data || typeof data.data !== "string") {
-      throw new ClassiError("failed to obtain id csrf token", 0, `${IDAPI}/csrf_token`, data)
+    if (status < 200 || status >= 300 || !data?.success || typeof data.data !== "string" || !data.data) {
+      throw new ClassiError("failed to obtain id csrf token", status, `${IDAPI}/csrf_token`, data)
     }
     return data.data
   }
@@ -33,7 +33,7 @@ export class IdApi {
       `${IDAPI}/login_methods`,
       { origin: ID, csrf: true, csrfToken: token, json: { username } }
     )
-    if (res.status >= 400 || !res.data?.success || !Array.isArray(res.data.data)) {
+    if (res.status < 200 || res.status >= 300 || !res.data?.success || !Array.isArray(res.data.data)) {
       throw new ClassiError("failed to fetch login methods", res.status, `${IDAPI}/login_methods`, res.data)
     }
     return res.data.data
@@ -41,20 +41,19 @@ export class IdApi {
 
   async login({ username, password, saveId = false }: Credentials & { saveId?: boolean }): Promise<LoginResult> {
     await this.http.request("GET", `${ID}/`, { origin: ID })
-    const token = await this.csrf()
-
     const methods = await this.loginMethods(username)
     if (!methods.some((m) => m.name === "password")) {
       throw new ClassiError("password login is not available for this account", 0, `${IDAPI}/login_methods`, methods)
     }
 
+    const token = await this.csrf()
     const res = await this.http.request<{ success: boolean }>("POST", `${IDAPI}/login/with_password`, {
       origin: ID,
       csrf: true,
       csrfToken: token,
       json: { username, password, saveId },
     })
-    if (!res.data?.success) {
+    if (res.status < 200 || res.status >= 300 || !res.data?.success) {
       throw new ClassiError("invalid username or password", res.status, `${IDAPI}/login/with_password`, res.data)
     }
 
@@ -64,6 +63,11 @@ export class IdApi {
       { origin: ID }
     )
 
+    if (cont.status < 200 || cont.status >= 300 || !cont.data?.success ||
+      !cont.data.data || typeof cont.data.data !== "object") {
+      throw new ClassiError("failed to continue login", cont.status, `${IDAPI}/login/continue`, cont.data)
+    }
+
     const token2 = await this.csrf()
     const issued = await this.http.request<{ success: boolean }>("POST", `${IDAPI}/login/issue_cookie`, {
       origin: ID,
@@ -71,10 +75,10 @@ export class IdApi {
       csrfToken: token2,
       json: {},
     })
-    if (!issued.data?.success) {
+    if (issued.status < 200 || issued.status >= 300 || !issued.data?.success) {
       throw new ClassiError("failed to issue session cookies", issued.status, `${IDAPI}/login/issue_cookie`, issued.data)
     }
-    return { status: cont.data?.data as LoginContinueStatus }
+    return { status: cont.data.data }
   }
 
   async myStatuses(): Promise<IdApiStatus> {
@@ -83,7 +87,7 @@ export class IdApi {
       `${IDAPI}/my/statuses`,
       { origin: ID }
     )
-    if (res.status >= 400 || !res.data?.success || !res.data?.data) {
+    if (res.status < 200 || res.status >= 300 || !res.data?.success || !res.data?.data) {
       throw new ClassiError("failed to fetch account statuses", res.status, `${IDAPI}/my/statuses`, res.data)
     }
     return res.data.data
@@ -96,7 +100,7 @@ export class IdApi {
       csrfToken: await this.csrf(),
       json: { password: currentPassword },
     })
-    if (!sudo.data?.success) {
+    if (sudo.status < 200 || sudo.status >= 300 || !sudo.data?.success) {
       throw new ClassiError("sudo re-authentication failed", sudo.status, `${IDAPI}/my/session/sudo`, sudo.data)
     }
     const res = await this.http.request("PUT", `${IDAPI}/my/username`, {
@@ -105,7 +109,7 @@ export class IdApi {
       csrfToken: await this.csrf(),
       json: { username: newUsername },
     })
-    if (res.status >= 400) {
+    if (res.status < 200 || res.status >= 300) {
       throw new ClassiError("failed to change username", res.status, `${IDAPI}/my/username`, res.data)
     }
   }

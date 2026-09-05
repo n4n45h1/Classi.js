@@ -16,7 +16,7 @@ Classi の Web 版でできることをコードからできるようにしま�
 npm install classi.js
 ```
 
-Node.js 18 以上を想定しています。依存パッケージはゼロです。
+Node.js 18 以上を想定しています。実行時の依存パッケージはゼロです。ビルドには開発依存の TypeScript を使います。
 
 ## はじめてのログイン
 
@@ -43,11 +43,11 @@ import { readFileSync, writeFileSync } from "node:fs"
 
 // 保存
 await client.login()
-writeFileSync("session.json", JSON.stringify(client.session))
+writeFileSync("session.json", JSON.stringify(client.session), { mode: 0o600 })
 
 // 復元(ログインなしでOK)
-const client = ClassiClient.fromSession(JSON.parse(readFileSync("session.json", "utf8")))
-await client.training.currentUser()
+const restored = ClassiClient.fromSession(JSON.parse(readFileSync("session.json", "utf8")))
+await restored.training.currentUser()
 ```
 
 `session.json` にはログイン済みCookieが入っているので、**公開リポジトリに上げないでください**。
@@ -56,7 +56,7 @@ await client.training.currentUser()
 
 | プロパティ | 対象 | できること |
 |---|---|---|
-| `client.id` | id-api.classi.jp | ログイン、アカウント情報、ユーザー名/パスワード変更 |
+| `client.id` | id-api.classi.jp | ログイン、アカウント情報、ユーザー名変更 |
 | `client.training` | training-api.classi.jp | 課題の一覧・取得・回答送信・採点結果、自習トレーニング |
 | `client.study` | study.classi.jp | 学習日報の読み書き、ランキング、GTZ目標 |
 | `client.platform` | platform.classi.jp | 通知、グループ/メッセージ、既読、ブックマーク、カレンダー |
@@ -148,7 +148,7 @@ try {
 | 状況 | 起きること | 対処 |
 |---|---|---|
 | ID/パスワードの誤り | `ClassiError("invalid username or password")` | 認証情報を確認 |
-| CSRFトークン失効 | 422 が返る | training-api は**内部で自動再取得して再送**します。手動では `client.training.invalidateCsrf()` を |
+| CSRFトークン失効 | 422 が返る | training-api の更新リクエストは**内部で一度だけ自動再取得して再送**します。手動では `client.training.invalidateCsrf()` を |
 | 存在しないリソース | 404 の `ClassiError` | ID の指定ミスがないか確認 |
 | セッション切れ | 401 の `ClassiError` | `client.login()` し直すか、セッションを作り直す |
 | ネットワーク障害 | ネイティブの `TypeError` | `ClassiError` とは別型なので `instanceof` で判定してください |
@@ -156,11 +156,12 @@ try {
 ## 開発者向け
 
 ```bash
+npm ci          # 開発依存をインストール
 npm run build   # TypeScript のビルド (dist/)
-npm test        # 結合テスト (実APIにアクセスします)
+npm test        # オフライン回帰テスト + 認証情報がある場合のみ実APIテスト
 ```
 
-テストは実サーバーを使うため、認証情報は環境変数で渡します(未設定なら自動スキップ):
+回帰テストは認証情報なしで実行できます。結合テストは実サーバーを使うため、認証情報を環境変数で渡します(未設定なら結合テストのみスキップ):
 
 ```bash
 CLASSI_USERNAME=your-id CLASSI_PASSWORD=your-pass npm test

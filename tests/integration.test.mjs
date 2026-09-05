@@ -1,15 +1,11 @@
 import assert from "node:assert/strict"
-import test from "node:test"
+import test, { describe } from "node:test"
 import { ClassiClient, ClassiError } from "../dist/index.js"
 
 const USERNAME = process.env.CLASSI_USERNAME
 const PASSWORD = process.env.CLASSI_PASSWORD
 
-if (!USERNAME || !PASSWORD) {
-  console.log("CLASSI_USERNAME / CLASSI_PASSWORD 未設定のため統合テストをスキップします")
-  process.exit(0)
-}
-
+describe("実API結合テスト", { skip: !USERNAME || !PASSWORD ? "CLASSI_USERNAME / CLASSI_PASSWORD 未設定" : false }, () => {
 const client = new ClassiClient({ username: USERNAME, password: PASSWORD })
 
 test("login: 正しい認証情報でログインできる", async () => {
@@ -111,8 +107,10 @@ test("セッション保存→復元でログインなしにAPIが使える", as
   assert.ok(me.userFullName.length > 0)
 })
 
-test("CSRF自動再取得: training.callは422時に自動リトライする", async () => {
+test("CSRFキャッシュの破棄後もユーザー情報が取れる", async () => {
   client.training.invalidateCsrf()
   const me = await client.training.currentUser()
   assert.ok(me.userFullName.length > 0)
+})
+
 })

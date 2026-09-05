@@ -15,7 +15,8 @@ console.log("login:", status)
 
 writeFileSync(
   new URL("./session.json", import.meta.url),
-  JSON.stringify(client.session, null, 2)
+  JSON.stringify(client.session, null, 2),
+  { mode: 0o600 }
 )
 console.log("session saved to examples/session.json (commit しないでください)")
 
