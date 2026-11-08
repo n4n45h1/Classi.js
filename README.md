@@ -119,6 +119,43 @@ await client.study.saveReportForm("2026-09-04", {
 })
 ```
 
+## セッション復旧・HTTP制御（開発版）
+
+ログイン情報を指定している場合、APIの**GET**がHTTP 401またはClassiログイン画面へのリダイレクトになったとき、再ログインを1回試みて取得を再実行します。並列の401応答からは再ログイン処理を共有します。回答送信・既読などの更新リクエストは重複操作を防ぐため**自動再送しません**。
+
+```ts
+import { ClassiClient, ClassiTimeoutError, ClassiNetworkError } from "classi.js"
+
+const client = new ClassiClient({
+  username: process.env.CLASSI_USERNAME,
+  password: process.env.CLASSI_PASSWORD,
+  timeoutMs: 15_000,
+})
+
+try {
+  const me = await client.training.currentUser()
+  console.log(me.userFullName)
+} catch (err) {
+  if (err instanceof ClassiTimeoutError) console.error("通信タイムアウト")
+  else if (err instanceof ClassiNetworkError) console.error("ネットワーク障害")
+}
+
+// ログアウトやアカウント切替時にはローカルの認証状態を消去
+client.clearSession()
+```
+
+**未ラップAPIの安全な読み取り**：`get()` はClassiの既知ホストに限定されたGET専用です。未確認エンドポイントを自動で検出したり、返却データをランタイム検証したりはしません。
+
+```ts
+const result = await client.get("training", "/current_user")
+const notifications = await client.platform.allNotifications("school", {
+  pageSize: 50,
+  maxItems: 250,
+})
+```
+
+**制限**：二要素認証・利用規約同意・アカウント選択などの追加ログインステップは自動処理しません。本人のアカウントを用いた実API検証は別途必要です。保存済みセッションには認証Cookieが含まれるため、他者に共有しないでください。
+
 ## エラー処理
 
 APIが2xx以外を返すと `ClassiError` がスローされます。`status` / `endpoint` / `body` を持っているので、原因の切り分けにそのまま使えます。
