@@ -31,6 +31,17 @@ export interface SubmitPayload {
   question_section_id: number
 }
 
+function likelyCsrfError(body: unknown): boolean {
+  const value = typeof body === "string" ? body : JSON.stringify(body ?? "")
+  return /csrf|authenticity[_\\s-]?token/i.test(value.slice(0, 2_048))
+}
+
+function validateMonth(year: number, month: number): void {
+  if (!Number.isInteger(year) || year < 2000 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12) {
+    throw new RangeError("year/month must be a valid calendar year and month")
+  }
+}
+
 export class TrainingApi {
   constructor(private http: Http) {}
 
@@ -60,7 +71,7 @@ export class TrainingApi {
         json,
       })
     let res = await attempt(method === "GET" ? undefined : await this.csrf())
-    if (method !== "GET" && res.status === 422) {
+    if (method !== "GET" && res.status === 422 && likelyCsrfError(res.data)) {
       this.invalidateCsrf()
       res = await attempt(await this.csrf())
     }
@@ -75,6 +86,7 @@ export class TrainingApi {
   }
 
   studentTasks(year: number, month: number, completed = false): Promise<StudentTaskSummary[]> {
+    validateMonth(year, month)
     return this.call<StudentTaskSummary[]>(
       "GET",
       `/student/task_training/student_tasks?year=${year}&month=${month}&completed=${completed}`
@@ -119,6 +131,7 @@ export class TrainingApi {
   }
 
   activitySummary(year: number, month: number): Promise<ActivityDaySummary[]> {
+    validateMonth(year, month)
     return this.call<ActivityDaySummary[]>("GET", `/student/activities/month/summary?year=${year}&month=${month}`)
   }
 
