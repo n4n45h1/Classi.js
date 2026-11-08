@@ -1,5 +1,5 @@
-export { ClassiClient, type ClassiClientOptions } from "./client.js"
-export { ClassiError, type SessionData } from "./http.js"
+export { ClassiClient, type ClassiClientOptions, type ClassiService, type ClassiQueryValue } from "./client.js"
+export { ClassiError, ClassiNetworkError, ClassiTimeoutError, type SessionData, type RequestOptions } from "./http.js"
 export { CookieJar } from "./cookies.js"
 export { IdApi, type Credentials, type LoginResult } from "./id.js"
 export {
@@ -13,6 +13,7 @@ export {
   PlatformApi,
   type PlatformUserInfo,
   type NotificationItem,
+  type NotificationKind,
   type GroupSummary,
   type GroupMessages,
 } from "./platform.js"
