@@ -7,6 +7,8 @@ export interface PlatformUserInfo {
   school: { id: number; benesse_school_id: string; name: string; [k: string]: unknown }
 }
 
+export type NotificationKind = "classi" | "school" | "service"
+
 export interface NotificationItem {
   id: number
   title?: string
@@ -59,14 +61,38 @@ export class PlatformApi {
   }
 
   notifications(
-    kind: "classi" | "school" | "service",
+    kind: NotificationKind,
     limit = 20,
     offset = 0
   ): Promise<{ count: number; items: NotificationItem[] }> {
+    if (!Number.isSafeInteger(limit) || limit <= 0 || !Number.isSafeInteger(offset) || offset < 0)
+      throw new RangeError("notification limit/offset must be non-negative integers with a positive limit")
     return this.call("GET", `/communication/api/v1/notification/${kind}?limit=${limit}&offset=${offset}`)
   }
 
-  unreadCount(): Promise<{ count: number }> {
+  /** Fetch notifications across pages with a hard maximum to avoid unbounded requests. */
+  async allNotifications(kind: NotificationKind, options: { pageSize?: number; maxItems?: number } = {}): Promise<NotificationItem[]> {
+    const pageSize = options.pageSize ?? 100
+    const maxItems = options.maxItems ?? 1000
+    if (!Number.isSafeInteger(pageSize) || pageSize <= 0 || !Number.isSafeInteger(maxItems) || maxItems <= 0) {
+      throw new RangeError("pageSize/maxItems must be positive integers")
+    }
+    const items: NotificationItem[] = []
+    let offset = 0
+    while (items.length < maxItems) {
+      const limit = Math.min(pageSize, maxItems - items.length)
+      const page = await this.notifications(kind, limit, offset)
+      if (!page || !Array.isArray(page.items) || !Number.isSafeInteger(page.count)) {
+        throw new ClassiError("invalid notification pagination response", 0, "/communication/api/v1/notification", page)
+      }
+      items.push(...page.items.slice(0, limit))
+      offset += page.items.length
+      if (!page.items.length || offset >= page.count || page.items.length < limit) break
+    }
+    return items
+  }
+
+    unreadCount(): Promise<{ count: number }> {
     return this.call("GET", "/communication/api/v1/notification/service/unreadcount")
   }
 
