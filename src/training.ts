@@ -33,7 +33,7 @@ export interface SubmitPayload {
 
 function likelyCsrfError(body: unknown): boolean {
   const value = typeof body === "string" ? body : JSON.stringify(body ?? "")
-  return /csrf|authenticity[_\\s-]?token/i.test(value.slice(0, 2_048))
+  return /csrf|authenticity.token/i.test(value.slice(0, 2_048))
 }
 
 function validateMonth(year: number, month: number): void {
