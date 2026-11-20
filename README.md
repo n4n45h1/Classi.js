@@ -1,14 +1,15 @@
-
 ![Classi-js-unofficial-img](./classi-js-unofficial.png)
+
 # classi.js
-Classi (classi.jp) を Node.js / TypeScript から扱うための、**非公式**のAPIクライアントです 
 
-ログイン、課題(タスクトレーニング)の取得と回答送信、通知やグループメッセージの取得など、
-Classi の Web 版でできることをコードからできるようにしました。
+Classi (classi.jp) を Node.js / TypeScript から扱うための**非公式**の API クライアントです。
 
-> ⚠️ このライブラリは非公式です。Classi株式会社 / 株式会社ベネッセコーポレーションとは関係ありません。
+ログイン、課題（タスクトレーニング）の取得・回答送信、通知やグループメッセージの取得など、
+Classi の Web 版の機能をコードから利用できます。
+
+> ⚠️ このライブラリは非公式です。Classi 株式会社 / 株式会社ベネッセコーポレーションとは関係ありません。
 > 必ず**自分のアカウント**で、迷惑のかからない範囲で使ってください。
-> 内部構造は実通信の観察に基づいているため、Classi側の更新で突然動かなくなるかもしれません。
+> 内部実装は実際の通信の観察に基づいているため、Classi 側の更新で突然動かなくなることがあります。
 
 ## インストール
 
@@ -16,7 +17,8 @@ Classi の Web 版でできることをコードからできるようにしま�
 npm install classi.js
 ```
 
-Node.js 18 以上を想定しています。実行時の依存パッケージはゼロです。ビルドには開発依存の TypeScript を使います。
+Node.js 18 以上を想定しています。実行時の依存パッケージはありません。
+ビルドには開発用の依存パッケージである TypeScript を使います。
 
 ## はじめてのログイン
 
@@ -34,7 +36,7 @@ const me = await client.training.currentUser()
 console.log(`${me.userFullName} さん (${me.schoolId})`)
 ```
 
-### ログインを毎回省略する
+### 毎回のログインを省略する
 
 一度ログインしたらセッションを保存して、次回から使い回せます。
 
@@ -45,21 +47,21 @@ import { readFileSync, writeFileSync } from "node:fs"
 await client.login()
 writeFileSync("session.json", JSON.stringify(client.session), { mode: 0o600 })
 
-// 復元(ログインなしでOK)
+// 復元（再ログイン不要）
 const restored = ClassiClient.fromSession(JSON.parse(readFileSync("session.json", "utf8")))
 await restored.training.currentUser()
 ```
 
-`session.json` にはログイン済みCookieが入っているので、**公開リポジトリに上げないでください**。
+`session.json` には認証済みの Cookie が含まれるので、**公開リポジトリにアップロードしないでください**。
 
 ## できること一覧
 
 | プロパティ | 対象 | できること |
-|---|---|---|
+| --- | --- | --- |
 | `client.id` | id-api.classi.jp | ログイン、アカウント情報、ユーザー名変更 |
 | `client.training` | training-api.classi.jp | 課題の一覧・取得・回答送信・採点結果、自習トレーニング |
-| `client.study` | study.classi.jp | 学習日報の読み書き、ランキング、GTZ目標 |
-| `client.platform` | platform.classi.jp | 通知、グループ/メッセージ、既読、ブックマーク、カレンダー |
+| `client.study` | study.classi.jp | 学習日報の読み書き、ランキング、GTZ 目標 |
+| `client.platform` | platform.classi.jp | 通知、グループ・メッセージ、既読、ブックマーク、カレンダー |
 | `client.portfolio` | portfolio.classi.jp | 活動記録、作品、アルバム |
 | `client.karte` | karte.classi.jp | テスト結果、学習レポート |
 
@@ -123,7 +125,8 @@ await client.study.saveReportForm("2026-09-04", {
 
 ## エラー処理
 
-APIが2xx以外を返すと `ClassiError` がスローされます。`status` / `endpoint` / `body` を持っているので、原因の切り分けにそのまま使えます。
+API が 2xx 以外のステータスコードを返すと `ClassiError` がスローされます。
+`status` / `endpoint` / `body` を持つため、原因の切り分けに利用できます。
 
 ```ts
 import { ClassiError } from "classi.js"
@@ -139,31 +142,32 @@ try {
 ```
 
 | プロパティ | 型 | 内容 |
-|---|---|---|
-| `status` | `number` | HTTPステータスコード |
-| `endpoint` | `string` | 呼び出したAPIのパス |
+| --- | --- | --- |
+| `status` | `number` | HTTP ステータスコード |
+| `endpoint` | `string` | 呼び出した API のパス |
 | `body` | `unknown` | サーバーからの生レスポンス |
-| `message` | `string` | 人間可読な説明 |
+| `message` | `string` | エラー内容の説明 |
 
 ### よくあるエラーと対処
 
 | 状況 | 起きること | 対処 |
-|---|---|---|
-| ID/パスワードの誤り | `ClassiError("invalid username or password")` | 認証情報を確認 |
-| CSRFトークン失効 | 422 が返る | training-api の更新リクエストは**内部で一度だけ自動再取得して再送**します。手動では `client.training.invalidateCsrf()` を |
+| --- | --- | --- |
+| ID・パスワードの誤り | `ClassiError`（`invalid username or password`） | 認証情報を確認 |
+| CSRF トークンの失効 | 422 が返る | training-api の更新リクエストでは、**内部で一度だけトークンを自動で再取得し、リクエストを再送**します。手動でキャッシュを破棄するには `client.training.invalidateCsrf()` を呼び出してください |
 | 存在しないリソース | 404 の `ClassiError` | ID の指定ミスがないか確認 |
-| セッション切れ | 401 の `ClassiError` | `client.login()` し直すか、セッションを作り直す |
+| セッション切れ | 401 の `ClassiError` | `client.login()` で再ログインするか、セッションを作り直す |
 | ネットワーク障害 | ネイティブの `TypeError` | `ClassiError` とは別型なので `instanceof` で判定してください |
 
 ## 開発者向け
 
 ```bash
-npm ci          # 開発依存をインストール
+npm ci          # 開発用の依存パッケージをインストール
 npm run build   # TypeScript のビルド (dist/)
-npm test        # オフライン回帰テスト + 認証情報がある場合のみ実APIテスト
+npm test        # オフライン回帰テスト + 認証情報がある場合のみ実 API テスト
 ```
 
-回帰テストは認証情報なしで実行できます。結合テストは実サーバーを使うため、認証情報を環境変数で渡します(未設定なら結合テストのみスキップ):
+回帰テストは認証情報なしで実行できます。
+結合テストは実際のサーバーを使うため、認証情報を環境変数で渡してください（未設定の場合は結合テストのみスキップされます）。
 
 ```bash
 CLASSI_USERNAME=your-id CLASSI_PASSWORD=your-pass npm test
