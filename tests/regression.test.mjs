@@ -128,7 +128,7 @@ test("training: refreshes CSRF and retries a 422 write exactly once", async (t) 
 
 test("training: a second 422 is surfaced, not retried forever", async (t) => {
   let count = 0
-  mockFetch(t, async (target) => { count++; return target.pathname.endsWith("csrf_token") ? json({ token: "fresh" }) : json({ error: "invalid" }, 422) })
+  mockFetch(t, async (target) => { count++; return target.pathname.endsWith("csrf_token") ? json({ token: "fresh" }) : json({ error: "csrf token invalid" }, 422) })
   const c = ClassiClient.fromSession({ cookies: [], csrfTokens: { training: "stale" } })
   await assert.rejects(() => c.training.submitAnswers(1, { id: 1, question_section_id: 1, questions: [] }), (e) => e.status === 422)
   assert.equal(count, 3)

@@ -8,18 +8,41 @@ export interface Cookie {
   expires?: number
 }
 
+// Reject public-suffix cookies in this Classi-specific jar.
+function allowedDomainAttribute(host: string, domain: string): boolean {
+  if (!domain.includes(".") || domain.includes("..")) return false
+  if (host !== domain && !host.endsWith("." + domain)) return false
+  if ((host === "classi.jp" || host.endsWith(".classi.jp")) &&
+    domain !== "classi.jp" && !domain.endsWith(".classi.jp")) return false
+  return true
+}
+
 export class CookieJar {
   private cookies: Cookie[] = []
 
   static fromJSON(data: Cookie[]): CookieJar {
+    if (!Array.isArray(data)) throw new TypeError("invalid session cookies")
     const jar = new CookieJar()
-    jar.cookies = data.map((c) => ({ ...c }))
+    jar.cookies = data.map((c) => {
+      if (!c || typeof c.name !== "string" || !c.name || typeof c.value !== "string" ||
+        typeof c.domain !== "string" || !c.domain.includes(".") ||
+        typeof c.path !== "string" || !c.path.startsWith("/") ||
+        typeof c.hostOnly !== "boolean" || typeof c.secure !== "boolean" ||
+        (c.expires !== undefined && (typeof c.expires !== "number" || !Number.isFinite(c.expires)))) {
+        throw new TypeError("invalid session cookie entry")
+      }
+      return { ...c }
+    })
     return jar
   }
 
   toJSON(): Cookie[] {
     this.cleanup()
     return this.cookies.map((c) => ({ ...c }))
+  }
+
+  clear(): void {
+    this.cookies = []
   }
 
   private cleanup(): void {
@@ -62,7 +85,7 @@ export class CookieJar {
       }
       if (!name) continue
       const host = requestUrl.hostname
-      if (!hostOnly && host !== domain && !host.endsWith(`.${domain}`)) continue
+      if (!hostOnly && !allowedDomainAttribute(host, domain)) continue
       if (secure && requestUrl.protocol !== "https:") continue
       if (name.startsWith("__Secure-") && !secure) continue
       if (name.startsWith("__Host-") && (!secure || !hostOnly || path !== "/" ||
