@@ -102,6 +102,8 @@ const templatesResult: Promise<{ templates: PortfolioTemplate[] }> = client.port
 const marksResult: Promise<{ marks: PortfolioMark[] }> = client.portfolio.marks()
 const statusResult: Promise<GraduationMessageStatus> = client.portfolio.graduationMessageStatus()
 const urlResult: Promise<{ url: string }> = client.karte.trainingBenesseTestUrl()
+const testResult: Promise<KarteTestSummary | undefined> = client.karte.testResults("user", 42, 1, "classroom")
+void testResult
 client.karte.testDetail("user", benesseExam.id, metadata)
 client.karte.tests("user", 1, "classroom")
 client.karte.pathways("user", 1, "classroom")

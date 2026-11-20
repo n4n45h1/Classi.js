@@ -175,4 +175,7 @@ samples do not establish nonempty payload fields: those remain unknown.
 Partner, analytics/GA4, badge notifications and Karte were deliberately left
 unchanged. No write wrappers were added. The standalone Karte testDetail 500
 remains unresolved; the UI uses embedded io_results from the tests list.
+`testDetail` is now deprecated; use `karte.testResults(userId, testId, kind,
+classroomId?)` to select the complete entry (including `detail.io_results`) from
+`karte.tests`, or select from an already fetched list. No match returns `undefined`.
 No UI rendering changes were made; README rendering was not visually checked.
