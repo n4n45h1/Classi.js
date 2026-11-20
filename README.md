@@ -167,6 +167,10 @@ npm test        # オフライン回帰テスト + 認証情報がある場合�
 CLASSI_USERNAME=your-id CLASSI_PASSWORD=your-pass npm test
 ```
 
+## 変更履歴
+
+各バージョンの変更点は [CHANGELOG.md](./CHANGELOG.md) を参照してください。
+
 ## License
 
 MIT
