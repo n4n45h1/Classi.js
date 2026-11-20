@@ -28,6 +28,24 @@ export interface ActivityRecord {
   [k: string]: unknown
 }
 
+export interface StudentSpaces {
+  spaces: unknown[]
+  pages: Record<string, unknown>
+}
+
+export interface StoryCategory {
+  id: number
+  parent_id: null
+  name: string
+  icon: string
+  sub_categories: { id: number; parent_id: number; name: string; icon: string | null }[]
+}
+
+export interface StoryComments {
+  story_comments: unknown[]
+  meta: { next_id: unknown }
+}
+
 export class PortfolioApi {
   constructor(private http: Http) {}
 
@@ -42,6 +60,22 @@ export class PortfolioApi {
 
   userInfo(): Promise<PortfolioUserInfo> {
     return this.call("GET", "/api/v1/user_info")
+  }
+
+  spaces(page = 1): Promise<StudentSpaces> {
+    return this.call("GET", `/api/v1/student/spaces?page=${page}`)
+  }
+
+  stories(grade: number): Promise<unknown[]> {
+    return this.call("GET", `/api/v2/student/stories?grade=${grade}`)
+  }
+
+  storyCategories(): Promise<{ story_categories: StoryCategory[] }> {
+    return this.call("GET", "/api/v2/story_categories")
+  }
+
+  storyComments(grade: number): Promise<StoryComments> {
+    return this.call("GET", `/api/v2/student/story_comments?grade=${grade}`)
   }
 
   searchActivityRecords(body: Record<string, unknown> = {}): Promise<{ activity_records: ActivityRecord[] }> {

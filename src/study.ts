@@ -32,6 +32,12 @@ export interface TargetGtz {
   targetGTZSelected: string | null
 }
 
+export interface UnrecordedUsers {
+  gradeName: string
+  classroomName: string
+  students: { attendanceNumber: number; fullName: string; fullNameKana: string; photoUrl: string }[]
+}
+
 export class StudyApi {
   constructor(private http: Http) {}
 
@@ -59,6 +65,10 @@ export class StudyApi {
 
   dailyReport(date: string): Promise<unknown> {
     return this.call("GET", `/study/my_report/daily?date=${encodeURIComponent(date)}`)
+  }
+
+  unrecordedUsers(date: string): Promise<UnrecordedUsers> {
+    return this.call("GET", `/study/learning_reports/unrecorded_users?date=${encodeURIComponent(date)}`)
   }
 
   reportForm(date: string): Promise<StudyReportForm> {

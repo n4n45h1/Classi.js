@@ -59,11 +59,12 @@ await restored.training.currentUser()
 | プロパティ | 対象 | できること |
 | --- | --- | --- |
 | `client.id` | id-api.classi.jp | ログイン、アカウント情報、ユーザー名変更 |
-| `client.training` | training-api.classi.jp | 課題の一覧・取得・回答送信・採点結果、自習トレーニング |
-| `client.study` | study.classi.jp | 学習日報の読み書き、ランキング、GTZ 目標 |
-| `client.platform` | platform.classi.jp | 通知、グループ・メッセージ、既読、ブックマーク、カレンダー |
-| `client.portfolio` | portfolio.classi.jp | 活動記録、作品、アルバム |
+| `client.training` | training-api.classi.jp | 課題、自習トレーニング、AI コーチのミッション・週次レポート、資格・就職・公務員対策 |
+| `client.study` | study.classi.jp | 学習日報の読み書き、未記録者一覧、ランキング、GTZ 目標 |
+| `client.platform` | platform.classi.jp | 通知、グループ・メッセージ、既読、ブックマーク、カレンダー、Web テスト、各種マスター |
+| `client.portfolio` | portfolio.classi.jp | 活動記録、作品、アルバム、スペース、ストーリー・コメント |
 | `client.karte` | karte.classi.jp | テスト結果、学習レポート |
+| `client.video` | kuroko.classi.jp | カテゴリー別の動画一覧、動画情報・期限付き再生 URL |
 
 ## よくある使い方
 
@@ -122,6 +123,84 @@ await client.study.saveReportForm("2026-09-04", {
   satisfactionRate: { timeRating: "3", contentRating: "3" },
 })
 ```
+
+### 追加の読み取り API
+
+以下のメソッドはデータの取得専用です。ミッションの作成・回答送信、
+メッセージの送信や既読更新は行いません。
+
+#### トレーニング
+
+| メソッド | 取得する内容 |
+| --- | --- |
+| `todayMissions()` | 今日のミッションと進捗 |
+| `missions()` / `mission(id)` | ミッションの一覧・詳細 |
+| `thisWeekDailyMission(id)` / `todayDailyMission(id)` | 指定したミッションの今週・今日の状態 |
+| `weeklyReport(year, week)` / `dailyMissionRecords(year, week)` | 週次レポート・日別の取り組み記録 |
+| `recommendedStudentTask()` | おすすめ課題と未完了件数 |
+| `careerTrainingCategories(kind)` | 公務員（`"koumuin"`）・就職（`"shushoku"`）対策のカテゴリー |
+| `qualificationTrainingCategories()` | 資格対策のカテゴリー |
+| `koumuinQuestionSections(unitLevel3Id)` | 公務員対策の小単元に属する問題一覧 |
+
+いずれも `client.training` のメソッドです。
+`year` と `week` は ISO 週番号の年と週（1〜53）を指定します。
+対象期間によってはサーバーが 400 を返すため、取得可能な過去の週を指定してください。
+
+```ts
+const missions = await client.training.missions()
+if (missions.length) {
+  const mission = await client.training.mission(missions[0].id)
+  const status = await client.training.todayDailyMission(mission.id)
+}
+const weekly = await client.training.weeklyReport(2026, 45)
+```
+
+#### 学習日報・プラットフォーム
+
+`client.study.unrecordedUsers("2026-09-04")` で、指定日の学習日報の未記録者を取得できます。
+
+| `client.platform` のメソッド | 取得する内容 |
+| --- | --- |
+| `webtestExaminations(page = 1)` / `webtestResults(page = 1)` | Web テストの配信一覧・結果一覧 |
+| `searchTalkrooms()` | トークルームの一覧（本文なしの読み取り用 POST） |
+| `cbankStat()` | ファイル領域の使用量・容量上限 |
+| `groupYears(displayThisYear = true)` | グループ一覧で選択できる年度 |
+| `subjectList()` / `schoolageList()` | 教科・学校段階のマスター |
+| `questionnaireCategories()` | アンケートのカテゴリー |
+
+`calendarEvents(startAt, endAt, eventType?)` の第3引数で `event_type` を指定できます。
+省略した場合は従来どおりのリクエストになります。
+`groupMessages()` の `group` は `GroupDetail` 型です。
+一覧用の `GroupSummary` と異なり、`unread`・`sort_no` は持たず、
+`member_count` や投稿・コメント・いいねの制限を表すフィールドを持ちます。
+
+#### ポートフォリオ・動画
+
+`client.portfolio.spaces(page = 1)` はスペース一覧、`stories(grade)` はストーリー一覧、
+`storyCategories()` はカテゴリー、`storyComments(grade)` はコメント一覧を取得します。
+`grade` には表示対象の学年を指定します。
+空の配列しか確認できていない項目の要素型は `unknown` です。
+
+動画サービスはログイン済みのセッションを共有します。
+`videosByCategory(category, first = 100, after = null)` はカーソルによるページングに対応し、
+`video(videoId, expireInSeconds = 300)` は動画情報と期限付き再生 URL を取得します。
+動画が見つからない場合の戻り値は `null` です。
+
+```ts
+const videos = await client.video.videosByCategory("CATEGORY_DAIGAKU_NYUSHI", 20)
+if (videos.nodes.length) {
+  const video = await client.video.video(videos.nodes[0].id)
+}
+if (videos.pageInfo.hasNextPage) {
+  const next = await client.video.videosByCategory(
+    "CATEGORY_DAIGAKU_NYUSHI", 20, videos.pageInfo.endCursor
+  )
+}
+```
+
+カテゴリーには `"CATEGORY_KOUMUIN_SHIKEN"`、`"CATEGORY_OTHER"` も指定できます。
+再生 URL は認証情報と同様に扱い、公開しないでください。
+動画 API は HTTP 200 でも GraphQL の `errors` があれば `ClassiError` をスローします。
 
 ## エラー処理
 

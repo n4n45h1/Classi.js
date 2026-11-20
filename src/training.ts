@@ -31,6 +31,80 @@ export interface SubmitPayload {
   question_section_id: number
 }
 
+export interface AdaptiveMissionSummary {
+  id: number
+  title: string
+  subjectName: string
+  learningMinutes: number
+  dayOfWeeks: string[]
+}
+
+export interface AdaptiveMission {
+  id: number
+  title: string
+  subjectCategory: { id: number; name: string }
+  subject: { id: number; name: string }
+  plan: string
+  learningMinutes: number
+  dayOfWeeks: string[]
+}
+
+export interface TodayMissions {
+  status: string
+  missions: { id: number; subject: { id: number; name: string }; learningMinutes: number; plan: string; status: string }[]
+  progress: { completed: number; total: number }
+}
+
+export interface DailyMissionStatus {
+  dayOfWeek: string
+  isCompleted: boolean
+}
+
+export interface AdaptiveWeeklyReport {
+  submissionsCount: number
+  awardType: string
+  completedCount: number
+  totalAnswerDays: number
+  subjectCategories: unknown[]
+  recommendedDrill: unknown
+}
+
+export interface DailyMissionRecord {
+  date: string
+  totalAnswerSubmissionsCount: number
+  missions: unknown[]
+}
+
+export interface RecommendedStudentTask {
+  studentTask: unknown
+  openStudentTaskCount: number
+  incompleteStudentTaskCount: number
+}
+
+export interface CareerTrainingCategory {
+  code: string
+  name: string
+  unitLevel2: { code: string; name: string; unitLevel3: { id: number; code: string; name: string; isCompleted: boolean }[] }[]
+}
+
+export interface QualificationTrainingCategory {
+  code: string
+  name: string
+  subjects: {
+    code: string
+    name: string
+    middleTeachingUnits: { code: string; name: string; smallTeachingUnits: { id: number; code: string; name: string; isCompleted: boolean }[] }[]
+  }[]
+}
+
+export interface KoumuinQuestionSections {
+  id: number
+  name: string
+  code: string
+  remainingQuestions: number
+  questionSections: { id: number; title: string; answerStatus: string; answeredCount: number }[]
+}
+
 export class TrainingApi {
   constructor(private http: Http) {}
 
@@ -72,6 +146,50 @@ export class TrainingApi {
 
   currentUser(): Promise<ClassiUser> {
     return this.call<ClassiUser>("GET", "/current_user")
+  }
+
+  todayMissions(): Promise<TodayMissions> {
+    return this.call("GET", "/student/adaptive_training/today_missions")
+  }
+
+  missions(): Promise<AdaptiveMissionSummary[]> {
+    return this.call("GET", "/student/adaptive_training/missions")
+  }
+
+  mission(id: number): Promise<AdaptiveMission> {
+    return this.call("GET", `/student/adaptive_training/missions/${id}`)
+  }
+
+  thisWeekDailyMission(id: number): Promise<DailyMissionStatus[]> {
+    return this.call("GET", `/student/adaptive_training/missions/${id}/this_week_daily_mission`)
+  }
+
+  todayDailyMission(id: number): Promise<{ status: string }> {
+    return this.call("GET", `/student/adaptive_training/missions/${id}/today_daily_mission`)
+  }
+
+  weeklyReport(year: number, week: number): Promise<AdaptiveWeeklyReport> {
+    return this.call("GET", `/student/adaptive_training/weekly_report?year=${year}&week=${week}`)
+  }
+
+  dailyMissionRecords(year: number, week: number): Promise<DailyMissionRecord[]> {
+    return this.call("GET", `/student/adaptive_training/weekly_report/daily_mission_records?year=${year}&week=${week}`)
+  }
+
+  recommendedStudentTask(): Promise<RecommendedStudentTask> {
+    return this.call("GET", "/student/task_training/recommended_student_task")
+  }
+
+  careerTrainingCategories(kind: "koumuin" | "shushoku"): Promise<CareerTrainingCategory[]> {
+    return this.call("GET", `/student/${kind}_self_training/categories`)
+  }
+
+  qualificationTrainingCategories(): Promise<QualificationTrainingCategory[]> {
+    return this.call("GET", "/student/shikaku_self_training/categories")
+  }
+
+  koumuinQuestionSections(unitLevel3Id: number): Promise<KoumuinQuestionSections> {
+    return this.call("GET", `/student/koumuin_self_training/unit_level3/${unitLevel3Id}/question_sections`)
   }
 
   studentTasks(year: number, month: number, completed = false): Promise<StudentTaskSummary[]> {
