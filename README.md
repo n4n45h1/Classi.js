@@ -316,5 +316,4 @@ MIT
 
 ---
 
-❤️ Developed by **Nanachi** ([github.com/n4n45h1](https://github.com/n4n45h1))
-& **GLM 5.3 Flash** (Z.ai)
+❤️ Developed by **Nanachi**
