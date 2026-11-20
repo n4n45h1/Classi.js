@@ -24,11 +24,73 @@ export interface GroupSummary {
   sort_no: number | null
 }
 
+export interface GroupDetail extends Omit<GroupSummary, "unread" | "sort_no"> {
+  description: string
+  edit_only: boolean
+  message_restricted: boolean
+  comment_restricted: boolean
+  like_restricted: boolean
+  group_message_restricted: boolean
+  group_comment_restricted: boolean
+  group_like_restricted: boolean
+  member_count: { total: number; teacher: number; inaccessible: number; deleted: number; student: number }
+}
+
 export interface GroupMessages {
-  group: GroupSummary & { description: string; [k: string]: unknown }
+  group: GroupDetail
   messages: unknown[]
   [k: string]: unknown
 }
+
+export interface WebtestExaminations {
+  total: number
+  page: number
+  distributions: unknown[]
+}
+
+export interface CbankUsage {
+  for_group: number
+  for_webtest: number
+  for_questionnaire: number
+  for_talkroom: number
+  for_studentcards: number
+  for_userconfig: number
+  for_officialdocs: number
+  for_others: number
+  total: number
+}
+
+export interface CbankStat {
+  mine: CbankUsage & { limit: number }
+  school: CbankUsage & { limit: number }
+  guardians: CbankUsage
+  max_upload_size: number
+}
+
+export interface GroupYear {
+  year_id: number
+  year_name: string
+}
+
+export interface SubjectList {
+  subject_categories: Record<string, {
+    id: string
+    name: string
+    order: string
+    school_ages_id: string
+    subjects: Record<string, { id: string; name: string; order: string }>
+  }>
+}
+
+export interface SchoolageList {
+  school_ages: Record<string, {
+    name: string
+    order: string
+    difficulties: Record<string, { name: string; short_name: string; order: string }>
+  }>
+}
+
+export type QuestionnaireCategories = Record<string, { id: number; name: string; order: number }>
 
 export class PlatformApi {
   constructor(private http: Http) {}
@@ -110,8 +172,41 @@ export class PlatformApi {
     return this.call("GET", `/api/task/list/${p0}/${p1}/${p2}/${limit}`)
   }
 
-  calendarEvents(startAt: string, endAt: string): Promise<unknown> {
-    return this.call("GET", `/api/event/list?start_at=${encodeURIComponent(startAt)}&end_at=${encodeURIComponent(endAt)}`)
+  calendarEvents(startAt: string, endAt: string, eventType?: string): Promise<unknown> {
+    const filter = eventType === undefined ? "" : `&event_type=${encodeURIComponent(eventType)}`
+    return this.call("GET", `/api/event/list?start_at=${encodeURIComponent(startAt)}&end_at=${encodeURIComponent(endAt)}${filter}`)
+  }
+
+  webtestExaminations(page = 1): Promise<WebtestExaminations> {
+    return this.call("GET", `/api/v2/webtest/examinations?page=${page}`)
+  }
+
+  webtestResults(page = 1): Promise<WebtestExaminations> {
+    return this.call("GET", `/api/v2/webtest/examinations/results?page=${page}`)
+  }
+
+  searchTalkrooms(): Promise<unknown[]> {
+    return this.call("POST", "/api/v3/talkrooms/search")
+  }
+
+  cbankStat(): Promise<CbankStat> {
+    return this.call("GET", "/api/cbank/stat")
+  }
+
+  groupYears(displayThisYear = true): Promise<GroupYear[]> {
+    return this.call("GET", `/api/v2/groups/years?display_this_year=${Number(displayThisYear)}`)
+  }
+
+  subjectList(): Promise<SubjectList> {
+    return this.call("GET", "/api/subject/list")
+  }
+
+  schoolageList(): Promise<SchoolageList> {
+    return this.call("GET", "/api/schoolage/list")
+  }
+
+  questionnaireCategories(): Promise<QuestionnaireCategories> {
+    return this.call("GET", "/api/questionnaire/categories")
   }
 
   cbankList(page = 1): Promise<unknown> {

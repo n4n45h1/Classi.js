@@ -4,6 +4,7 @@ import { TrainingApi } from "./training.js"
 import { StudyApi } from "./study.js"
 import { PlatformApi } from "./platform.js"
 import { PortfolioApi, KarteApi } from "./portfolio.js"
+import { VideoApi } from "./video.js"
 import type { LoginResult, Credentials } from "./id.js"
 
 export interface ClassiClientOptions {
@@ -23,6 +24,7 @@ export class ClassiClient {
   readonly platform: PlatformApi
   readonly portfolio: PortfolioApi
   readonly karte: KarteApi
+  readonly video: VideoApi
 
   constructor(opts: ClassiClientOptions = {}) {
     this.credentials =
@@ -36,6 +38,7 @@ export class ClassiClient {
     this.platform = new PlatformApi(this.http)
     this.portfolio = new PortfolioApi(this.http)
     this.karte = new KarteApi(this.http)
+    this.video = new VideoApi(this.http)
   }
 
   async login(): Promise<LoginResult> {
