@@ -52,6 +52,10 @@ export class Http {
       csrfToken?: string
       json?: unknown
       form?: Record<string, string>
+      multipart?: FormData
+      contentType?: string
+      xsrf?: boolean
+      requestedWith?: boolean
       raw?: boolean
       csrf?: boolean
     } = {}
@@ -69,16 +73,29 @@ export class Http {
       headers["Referer"] = opts.referer
     }
     if (opts.csrf && opts.csrfToken) headers["X-CSRF-Token"] = opts.csrfToken
-    let body: string | undefined
+    if (opts.requestedWith) headers["X-Requested-With"] = "XMLHttpRequest"
+    let body: string | FormData | undefined
     if (opts.json !== undefined) {
       body = JSON.stringify(opts.json)
-      headers["Content-Type"] = "application/json"
+      headers["Content-Type"] = opts.contentType ?? "application/json"
     } else if (opts.form) {
       body = new URLSearchParams(opts.form).toString()
       headers["Content-Type"] = "application/x-www-form-urlencoded"
+    } else if (opts.multipart) {
+      body = opts.multipart
     }
     const cookie = this.jar.getHeader(target)
     if (cookie) headers["Cookie"] = cookie
+    if (opts.xsrf && cookie) {
+      const token = cookie.split(/;\s*/).find((part) => part.startsWith("XSRF-TOKEN="))?.slice(11)
+      if (token) {
+        try {
+          headers["X-XSRF-TOKEN"] = decodeURIComponent(token)
+        } catch {
+          headers["X-XSRF-TOKEN"] = token
+        }
+      }
+    }
 
     const res = await fetch(target, {
       method,

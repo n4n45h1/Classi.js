@@ -76,7 +76,7 @@ export class StudyApi {
   }
 
   saveReportForm(date: string, form: StudyReportForm): Promise<void> {
-    return this.call("PUT", `/study/my_report/form?date=${encodeURIComponent(date)}`, form)
+    return this.call("PUT", "/study/my_report/form", { ...form, date })
   }
 
   recordedDates(month: string): Promise<string[]> {
@@ -91,8 +91,11 @@ export class StudyApi {
     return this.call("GET", "/study/target_gtz")
   }
 
-  setTargetGtz(gtzs: string[]): Promise<unknown> {
-    return this.call("POST", "/study/target_gtz", { targetGTZSelected: gtzs })
+  setTargetGtz(gtzs: string[] | string): Promise<unknown> {
+    if (Array.isArray(gtzs) && gtzs.length !== 1) {
+      throw new ClassiError("exactly one target GTZ is required", 0, "/study/target_gtz", null)
+    }
+    return this.call("POST", "/study/target_gtz", { target_gtz_name: typeof gtzs === "string" ? gtzs : gtzs[0] })
   }
 
   readFeatureBadge(): Promise<void> {
