@@ -1,6 +1,6 @@
-![Classi-js-unofficial-img](./classi-js-unofficial.png)
-
 # classi.js
+
+<img src="./classi-js-unofficial.png" alt="Classi.js のロゴ" width="420">
 
 Classi (classi.jp) を Node.js / TypeScript から扱うための**非公式**の API クライアントです。
 
@@ -48,7 +48,9 @@ await client.login()
 writeFileSync("session.json", JSON.stringify(client.session), { mode: 0o600 })
 
 // 復元（再ログイン不要）
-const restored = ClassiClient.fromSession(JSON.parse(readFileSync("session.json", "utf8")))
+const restored = ClassiClient.fromSession(
+  JSON.parse(readFileSync("session.json", "utf8"))
+)
 await restored.training.currentUser()
 ```
 
@@ -85,7 +87,9 @@ const detail = await client.training.lessonStudentTask(tasks[0].id)
 const topic = detail.learningTopics[0]
 if (!topic?.nextQuestionSection) throw new Error("未回答の問題がありません")
 
-const section = await client.training.questionSection(topic.nextQuestionSection.id)
+const section = await client.training.questionSection(
+  topic.nextQuestionSection.id
+)
 const q = section.questions[0]
 
 const res = await client.training.submitAnswers(topic.id, {
@@ -94,7 +98,10 @@ const res = await client.training.submitAnswers(topic.id, {
   questions: [
     {
       id: q.id,
-      answers: [{ blank_symbol: null, answer_option_key: q.content.answerOptions![0].key }],
+      answers: [{
+        blank_symbol: null,
+        answer_option_key: q.content.answerOptions![0].key,
+      }],
     },
   ],
 })
@@ -131,18 +138,20 @@ await client.study.saveReportForm("2026-09-04", {
 
 #### トレーニング
 
-| メソッド | 取得する内容 |
-| --- | --- |
-| `todayMissions()` | 今日のミッションと進捗 |
-| `missions()` / `mission(id)` | ミッションの一覧・詳細 |
-| `thisWeekDailyMission(id)` / `todayDailyMission(id)` | 指定したミッションの今週・今日の状態 |
-| `weeklyReport(year, week)` / `dailyMissionRecords(year, week)` | 週次レポート・日別の取り組み記録 |
-| `recommendedStudentTask()` | おすすめ課題と未完了件数 |
-| `careerTrainingCategories(kind)` | 公務員（`"koumuin"`）・就職（`"shushoku"`）対策のカテゴリー |
-| `qualificationTrainingCategories()` | 資格対策のカテゴリー |
-| `koumuinQuestionSections(unitLevel3Id)` | 公務員対策の小単元に属する問題一覧 |
-
 いずれも `client.training` のメソッドです。
+
+- `todayMissions()`：今日のミッションと進捗
+- `missions()`：ミッションの一覧
+- `mission(id)`：ミッションの詳細
+- `thisWeekDailyMission(id)`：指定したミッションの今週の状態
+- `todayDailyMission(id)`：指定したミッションの今日の状態
+- `weeklyReport(year, week)`：週次レポート
+- `dailyMissionRecords(year, week)`：日別の取り組み記録
+- `recommendedStudentTask()`：おすすめ課題と未完了件数
+- `careerTrainingCategories(kind)`：公務員（`"koumuin"`）・就職（`"shushoku"`）対策のカテゴリー
+- `qualificationTrainingCategories()`：資格対策のカテゴリー
+- `koumuinQuestionSections(unitLevel3Id)`：公務員対策の小単元に属する問題一覧
+
 `year` と `week` は ISO 週番号の年と週（1〜53）を指定します。
 対象期間によってはサーバーが 400 を返すため、取得可能な過去の週を指定してください。
 
@@ -159,14 +168,16 @@ const weekly = await client.training.weeklyReport(2026, 45)
 
 `client.study.unrecordedUsers("2026-09-04")` で、指定日の学習日報の未記録者を取得できます。
 
-| `client.platform` のメソッド | 取得する内容 |
-| --- | --- |
-| `webtestExaminations(page = 1)` / `webtestResults(page = 1)` | Web テストの配信一覧・結果一覧 |
-| `searchTalkrooms()` | トークルームの一覧（本文なしの読み取り用 POST） |
-| `cbankStat()` | ファイル領域の使用量・容量上限 |
-| `groupYears(displayThisYear = true)` | グループ一覧で選択できる年度 |
-| `subjectList()` / `schoolageList()` | 教科・学校段階のマスター |
-| `questionnaireCategories()` | アンケートのカテゴリー |
+以下は `client.platform` のメソッドです。
+
+- `webtestExaminations(page = 1)`：Web テストの配信一覧
+- `webtestResults(page = 1)`：Web テストの結果一覧
+- `searchTalkrooms()`：トークルームの一覧（本文なしの読み取り用 POST）
+- `cbankStat()`：ファイル領域の使用量・容量上限
+- `groupYears(displayThisYear = true)`：グループ一覧で選択できる年度
+- `subjectList()`：教科のマスター
+- `schoolageList()`：学校段階のマスター
+- `questionnaireCategories()`：アンケートのカテゴリー
 
 `calendarEvents(startAt, endAt, eventType?)` の第3引数で `event_type` を指定できます。
 省略した場合は従来どおりのリクエストになります。
@@ -187,7 +198,9 @@ const weekly = await client.training.weeklyReport(2026, 45)
 動画が見つからない場合の戻り値は `null` です。
 
 ```ts
-const videos = await client.video.videosByCategory("CATEGORY_DAIGAKU_NYUSHI", 20)
+const videos = await client.video.videosByCategory(
+  "CATEGORY_DAIGAKU_NYUSHI", 20
+)
 if (videos.nodes.length) {
   const video = await client.video.video(videos.nodes[0].id)
 }
@@ -232,10 +245,14 @@ try {
 | 状況 | 起きること | 対処 |
 | --- | --- | --- |
 | ID・パスワードの誤り | `ClassiError`（`invalid username or password`） | 認証情報を確認 |
-| CSRF トークンの失効 | 422 が返る | training-api の更新リクエストでは、**内部で一度だけトークンを自動で再取得し、リクエストを再送**します。手動でキャッシュを破棄するには `client.training.invalidateCsrf()` を呼び出してください |
+| CSRF トークンの失効 | 422 が返る | トークンを自動で再取得（下記参照） |
 | 存在しないリソース | 404 の `ClassiError` | ID の指定ミスがないか確認 |
 | セッション切れ | 401 の `ClassiError` | `client.login()` で再ログインするか、セッションを作り直す |
 | ネットワーク障害 | ネイティブの `TypeError` | `ClassiError` とは別型なので `instanceof` で判定してください |
+
+training-api の更新リクエストでは、CSRF トークンが失効すると、
+**内部で一度だけトークンを自動で再取得し、リクエストを再送**します。
+手動でキャッシュを破棄するには `client.training.invalidateCsrf()` を呼び出してください。
 
 ## 開発者向け
 
@@ -262,4 +279,5 @@ MIT
 
 ---
 
-❤️ Developed by **Nanachi** ([github.com/n4n45h1](https://github.com/n4n45h1)) & **GLM 5.3 Flash** (Z.ai)
+❤️ Developed by **Nanachi** ([github.com/n4n45h1](https://github.com/n4n45h1))
+& **GLM 5.3 Flash** (Z.ai)
