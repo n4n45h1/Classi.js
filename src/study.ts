@@ -12,7 +12,19 @@ export interface StudyReportForm {
     sleptAt: string | null
   }
   satisfactionRate: { timeRating: string | null; contentRating: string | null }
-  subjectLearning: unknown
+  subjectLearningReports: {
+    subjectId: number
+    name: string
+    learnedMinutes: number | null
+    color: string
+    stampUrl: string
+    note: string | null
+  }[]
+  studentMessage: string | null
+}
+
+export interface StudyUser extends Omit<ClassiUser, "school"> {
+  assessmentPermitYears: number[]
 }
 
 export interface TargetGtz {
@@ -33,8 +45,8 @@ export class StudyApi {
     return res.data
   }
 
-  currentUser(): Promise<ClassiUser> {
-    return this.call<ClassiUser>("GET", "/current_user")
+  currentUser(): Promise<StudyUser> {
+    return this.call<StudyUser>("GET", "/current_user")
   }
 
   permittedMonths(): Promise<{ year: number; month: number }[]> {
