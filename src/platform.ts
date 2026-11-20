@@ -2,6 +2,51 @@ import { Http, ClassiError } from "./http.js"
 
 const PLAT = "https://platform.classi.jp"
 
+export interface GroupAttachment {
+  entry_cd: string | number
+  file_type: number
+  download_uri?: string
+  download_url?: string
+  name?: string
+  file_name?: string
+  title?: string
+  description?: string
+  url?: string
+}
+
+export interface TalkroomAttachment {
+  entry_cd: string | number
+  type: number
+  download_url: string
+  file_name: string
+}
+
+export interface UploadedAttachment {
+  entry_cd: string | number
+  file_type: number
+  download_uri: string
+  name: string
+}
+
+function mapGroupAttachments(attachments: GroupAttachment[]) {
+  return attachments.map((attachment) => ({
+    entry_cd: attachment.entry_cd,
+    type: attachment.file_type,
+    file_type: attachment.file_type,
+    download_url: attachment.download_uri || attachment.download_url,
+    file_name: attachment.name || attachment.file_name,
+    ...(attachment.title ? { title: attachment.title } : {}),
+    ...(attachment.description ? { description: attachment.description } : {}),
+    ...(attachment.url ? { url: attachment.url } : {}),
+  }))
+}
+
+function isCsrfFailure(status: number, body: unknown): boolean {
+  return status === 422 || (status === 403 && /csrf|xsrf|authenticity[\s_-]*token/i.test(
+    typeof body === "string" ? body : JSON.stringify(body) ?? ""
+  ))
+}
+
 export interface PlatformUserInfo {
   user: { id: number; icon: string; name: string; type: number; language: string; fullname: string }
   school: { id: number; benesse_school_id: string; name: string; [k: string]: unknown }
@@ -183,6 +228,83 @@ export interface QuestionnaireDetail {
 export class PlatformApi {
   constructor(private http: Http) {}
 
+  private async csrf(): Promise<string> {
+    const cached = this.http.csrfTokens["platform"]
+    if (cached) return cached
+    const endpoint = `${PLAT}/api/v2/csrf/token`
+    const res = await this.http.request<{ token: string }>("GET", endpoint, { origin: PLAT, xsrf: true })
+    if (res.status < 200 || res.status >= 300 || typeof res.data?.token !== "string" || !res.data.token) {
+      throw new ClassiError("failed to obtain platform csrf token", res.status, endpoint, res.data)
+    }
+    this.http.csrfTokens["platform"] = res.data.token
+    return res.data.token
+  }
+
+  invalidateCsrf(): void {
+    delete this.http.csrfTokens["platform"]
+  }
+
+  private async write<T>(
+    method: "GET" | "POST",
+    path: string,
+    opts: { json?: unknown; multipart?: FormData; token?: boolean; groupPost?: boolean; xhr?: boolean; xsrf?: boolean } = {}
+  ): Promise<T> {
+    const attempt = (token?: string) => this.http.request<T>(method, `${PLAT}${path}`, {
+      origin: PLAT,
+      json: opts.json,
+      multipart: opts.multipart,
+      contentType: opts.groupPost ? "application/x-www-form-urlencoded" : undefined,
+      requestedWith: opts.xhr,
+      csrf: opts.token,
+      csrfToken: token,
+      xsrf: opts.xsrf !== false,
+    })
+    let res = await attempt(opts.token ? await this.csrf() : undefined)
+    if (isCsrfFailure(res.status, res.data)) {
+      this.invalidateCsrf()
+      const token = await this.csrf()
+      res = await attempt(opts.token ? token : undefined)
+    }
+    if (res.status < 200 || res.status >= 300) {
+      throw new ClassiError(`platform api error: ${path}`, res.status, path, res.data)
+    }
+    return res.data
+  }
+
+  sendGroupMessage(groupId: number | string, message: string, attachments: GroupAttachment[] = [], reservedId?: number | string): Promise<unknown> {
+    return this.write("POST", `/api/v2/groups/${encodeURIComponent(groupId)}/messages`, {
+      json: { message, attach: mapGroupAttachments(attachments), reserved_id: reservedId },
+      token: true, groupPost: true, xhr: true,
+    })
+  }
+
+  commentOnGroupMessage(groupId: number | string, messageId: number | string, message: string, attachments: GroupAttachment[] = []): Promise<unknown> {
+    return this.write("POST", `/api/v2/groups/${encodeURIComponent(groupId)}/messages/${encodeURIComponent(messageId)}/comments`, {
+      json: { message, attach: mapGroupAttachments(attachments) }, groupPost: true, xhr: true,
+    })
+  }
+
+  sendTalkroomMessage(roomId: number | string, message: string, attachments: TalkroomAttachment[] = []): Promise<unknown> {
+    return this.write("POST", `/api/talkroom/${encodeURIComponent(roomId)}/send`, {
+      json: { message, attached: attachments }, token: true, xhr: true, xsrf: false,
+    })
+  }
+
+  uploadAttachment(file: Blob, filename?: string): Promise<UploadedAttachment> {
+    const multipart = new FormData()
+    if (filename === undefined) multipart.append("file", file)
+    else multipart.append("file", file, filename)
+    return this.write("POST", "/api/cbank/attach", { multipart })
+  }
+
+  markGroupMessageRead(messageId: number | string): Promise<unknown> {
+    return this.write("POST", `/api/v3/group_messages/${encodeURIComponent(messageId)}/mark_as_read`, { xhr: true })
+  }
+
+  markTalkroomMessageRead(roomId: number | string, messageId: number | string): Promise<unknown> {
+    return this.write("GET", `/api/talkroom/${encodeURIComponent(roomId)}/${encodeURIComponent(messageId)}/read`)
+  }
+
   private async call<T>(method: "GET" | "POST" | "PUT" | "DELETE", path: string, json?: unknown): Promise<T> {
     const res = await this.http.request<T>(method, `${PLAT}${path}`, {
       origin: PLAT,
@@ -221,7 +343,7 @@ export class PlatformApi {
   }
 
   markAllServiceNotificationsRead(): Promise<unknown> {
-    return this.call("POST", "/communication/api/v1/notification/service/allread", {})
+    return this.write("POST", "/communication/api/v1/notification/service/allread", { json: [] })
   }
 
   groups(year?: number | string): Promise<{ groups: GroupSummary[] }> {
