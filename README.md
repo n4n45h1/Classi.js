@@ -145,15 +145,18 @@ await client.study.saveReportForm("2026-09-04", {
 - `mission(id)`：ミッションの詳細
 - `thisWeekDailyMission(id)`：指定したミッションの今週の状態
 - `todayDailyMission(id)`：指定したミッションの今日の状態
-- `weeklyReport(year, week)`：週次レポート
-- `dailyMissionRecords(year, week)`：日別の取り組み記録
+- `weeklyReport(year?, week?)`：週次レポート
+- `dailyMissionRecords(year?, week?)`：日別の取り組み記録
 - `recommendedStudentTask()`：おすすめ課題と未完了件数
 - `careerTrainingCategories(kind)`：公務員（`"koumuin"`）・就職（`"shushoku"`）対策のカテゴリー
 - `qualificationTrainingCategories()`：資格対策のカテゴリー
 - `koumuinQuestionSections(unitLevel3Id)`：公務員対策の小単元に属する問題一覧
 
-`year` と `week` は ISO 週番号の年と週（1〜53）を指定します。
-対象期間によってはサーバーが 400 を返すため、取得可能な過去の週を指定してください。
+`year` と `week` は ISO 週番号の年と週（1〜53）をセットで指定します。
+両方を省略すると、Web アプリと同じく直近の完了した週（日本時間 / Asia/Tokyo で現在日時の7日前が属する ISO 週）を取得します。
+明示した年・週は変更せず送信します。今週および未来の週はサーバーが HTTP 400 を返し、
+`ClassiError.body` の `errorType` は `future_week` になります（今週の途中集計は取得できません）。
+公開ヘルパー `latestCompletedIsoWeek(date = new Date())` でも、この既定値を `{ year, week }` として取得できます。
 
 ```ts
 const missions = await client.training.missions()
@@ -161,7 +164,9 @@ if (missions.length) {
   const mission = await client.training.mission(missions[0].id)
   const status = await client.training.todayDailyMission(mission.id)
 }
-const weekly = await client.training.weeklyReport(2026, 45)
+const weekly = await client.training.weeklyReport()
+const dailyRecords = await client.training.dailyMissionRecords()
+const pastWeekly = await client.training.weeklyReport(2026, 45)
 ```
 
 #### 学習日報・プラットフォーム
