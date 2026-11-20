@@ -15,6 +15,28 @@ const API = "https://training-api.classi.jp/api"
 const ORIGIN = "https://training.classi.jp"
 const REF = "https://training.classi.jp/student/"
 
+/** Returns the ISO week-year and week of seven days ago in Asia/Tokyo (JST). */
+export function latestCompletedIsoWeek(date = new Date()): { year: number; week: number } {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Tokyo",
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(date)
+  const value = (type: string) => Number(parts.find(part => part.type === type)!.value)
+  const thursday = new Date(Date.UTC(value("year"), value("month") - 1, value("day") - 7))
+  thursday.setUTCDate(thursday.getUTCDate() + 4 - (thursday.getUTCDay() || 7))
+  const year = thursday.getUTCFullYear()
+  const week = Math.ceil(((thursday.getTime() - Date.UTC(year, 0, 1)) / 86400000 + 1) / 7)
+  return { year, week }
+}
+
+function reportWeek(year?: number, week?: number): { year: number; week: number } {
+  if (year === undefined && week === undefined) return latestCompletedIsoWeek()
+  if (year === undefined || week === undefined) throw new TypeError("year and week must be provided together")
+  return { year, week }
+}
+
 export interface AnswerInput {
   blank_symbol?: string | null
   answer_option_key: string
@@ -168,12 +190,24 @@ export class TrainingApi {
     return this.call("GET", `/student/adaptive_training/missions/${id}/today_daily_mission`)
   }
 
-  weeklyReport(year: number, week: number): Promise<AdaptiveWeeklyReport> {
-    return this.call("GET", `/student/adaptive_training/weekly_report?year=${year}&week=${week}`)
+  /**
+   * Defaults to the latest completed ISO week in JST when both arguments are omitted.
+   * Explicit year/week are sent unchanged; the current/future week returns HTTP 400
+   * with ClassiError.body.errorType `future_week`.
+   */
+  weeklyReport(year?: number, week?: number): Promise<AdaptiveWeeklyReport> {
+    const period = reportWeek(year, week)
+    return this.call("GET", `/student/adaptive_training/weekly_report?year=${period.year}&week=${period.week}`)
   }
 
-  dailyMissionRecords(year: number, week: number): Promise<DailyMissionRecord[]> {
-    return this.call("GET", `/student/adaptive_training/weekly_report/daily_mission_records?year=${year}&week=${week}`)
+  /**
+   * Defaults to the latest completed ISO week in JST when both arguments are omitted.
+   * Explicit year/week are sent unchanged; the current/future week returns HTTP 400
+   * with ClassiError.body.errorType `future_week`.
+   */
+  dailyMissionRecords(year?: number, week?: number): Promise<DailyMissionRecord[]> {
+    const period = reportWeek(year, week)
+    return this.call("GET", `/student/adaptive_training/weekly_report/daily_mission_records?year=${period.year}&week=${period.week}`)
   }
 
   recommendedStudentTask(): Promise<RecommendedStudentTask> {
