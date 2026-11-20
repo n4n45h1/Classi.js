@@ -178,6 +178,18 @@ const weekly = await client.training.weeklyReport(2026, 45)
 - `subjectList()`：教科のマスター
 - `schoolageList()`：学校段階のマスター
 - `questionnaireCategories()`：アンケートのカテゴリー
+- `assignedQuestionnaires()`：配信されたアンケートの一覧
+- `answeredQuestionnaires()`：回答済みアンケートの一覧
+- `questionnaireInfo(distributionId, groupId)`：アンケートの配信情報・回答状態
+- `questionnaireDetail(distributionId)`：アンケートの設問・選択肢などの詳細
+- `bookmarks()`：ブックマークしたメッセージの一覧（要素型は `unknown`）
+
+アンケートのメソッドは GET のみを使い、回答の開始・保存・送信は行いません。
+配信 ID とグループ ID は一覧の `distribution_id` と `group_id` を指定します。
+未開始のアンケートは詳細の取得を許可されない場合があります。
+その場合も、自動で回答を開始することはありません。
+`groups(year?)` と `newMessages(year?)` では年度を指定できます。
+省略時は従来と同じリクエストになります。
 
 `calendarEvents(startAt, endAt, eventType?)` の第3引数で `event_type` を指定できます。
 省略した場合は従来どおりのリクエストになります。
@@ -191,6 +203,13 @@ const weekly = await client.training.weeklyReport(2026, 45)
 `storyCategories()` はカテゴリー、`storyComments(grade)` はコメント一覧を取得します。
 `grade` には表示対象の学年を指定します。
 空の配列しか確認できていない項目の要素型は `unknown` です。
+
+以下も `client.portfolio` の読み取り専用メソッドです。
+
+- `activityRecord(id)`：活動記録の詳細（文書・回答データと評価件数など）
+- `templates()`：文書テンプレートの一覧
+- `marks()`：マークの一覧
+- `graduationMessageStatus()`：卒業メッセージの配信状態
 
 動画サービスはログイン済みのセッションを共有します。
 `videosByCategory(category, first = 100, after = null)` はカーソルによるページングに対応し、
@@ -214,6 +233,24 @@ if (videos.pageInfo.hasNextPage) {
 カテゴリーには `"CATEGORY_KOUMUIN_SHIKEN"`、`"CATEGORY_OTHER"` も指定できます。
 再生 URL は認証情報と同様に扱い、公開しないでください。
 動画 API は HTTP 200 でも GraphQL の `errors` があれば `ClassiError` をスローします。
+
+#### ログイン設定・カルテ
+
+- `client.id.schoolLoginOptions()`：学校のロール別 CAPTCHA・メールによるパスワード再設定の設定
+- `client.karte.tests(userId, kind, classroomId?)`：クラスを指定したテスト結果の一覧
+- `client.karte.pathways(userId, type = 1, classroomsId?)`：クラスを指定した進路情報
+- `client.karte.testDetail(userId, examId, params?)`：テスト結果の詳細
+- `client.karte.trainingBenesseTestUrl()`：ベネッセのテスト・トレーニングへの遷移先 URL
+
+`KarteTestSummary.kind` は数値または文字列です。
+通常の結果には `detail.labels`・`detail.kind`、ベネッセの結果には
+`detail.bc_results.exam` が含まれるため、各フィールドの有無を確認してください。
+`testDetail` の第3引数では `name`、`exam_date`、`national_display_code`、
+`prefecture_display_code`、`school_display_code`、`gtz_output_flg` を指定できます。
+これらは一覧の `detail.bc_results.exam` から取得できます。
+第3引数を省略した場合、従来どおりクエリなしで取得します。
+遷移先 URL の取得では、その URL へのアクセスやリダイレクトの追跡は行いません。
+返された URL には認証に関わる情報が含まれる可能性があるため、ログ出力・公開は避けてください。
 
 ## エラー処理
 

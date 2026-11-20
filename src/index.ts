@@ -1,7 +1,7 @@
 export { ClassiClient, type ClassiClientOptions } from "./client.js"
 export { ClassiError, type SessionData } from "./http.js"
 export { CookieJar } from "./cookies.js"
-export { IdApi, type Credentials, type LoginResult } from "./id.js"
+export { IdApi, type Credentials, type LoginResult, type SchoolLoginOptions } from "./id.js"
 export {
   TrainingApi,
   type SubmitPayload,
@@ -33,7 +33,17 @@ export {
   type SubjectList,
   type SchoolageList,
   type QuestionnaireCategories,
+  type AssignedQuestionnaire,
+  type AnsweredQuestionnaire,
+  type QuestionnaireInfo,
+  type QuestionnaireText,
+  type QuestionnaireDetail,
 } from "./platform.js"
-export { PortfolioApi, KarteApi, type PortfolioUserInfo, type ActivityRecord, type KarteTestSummary, type StudentSpaces, type StoryCategory, type StoryComments } from "./portfolio.js"
+export {
+  PortfolioApi, KarteApi, type PortfolioUserInfo, type ActivityRecord, type KarteTestSummary,
+  type StudentSpaces, type StoryCategory, type StoryComments, type ActivityRecordDetail,
+  type PortfolioTemplate, type PortfolioMark, type GraduationMessageStatus,
+  type KarteTestDetailParams, type KarteBenesseExam,
+} from "./portfolio.js"
 export * from "./types.js"
 export { VideoApi, type VideoCategory, type VideoSummary, type VideosByCategory, type VideoDetail } from "./video.js"

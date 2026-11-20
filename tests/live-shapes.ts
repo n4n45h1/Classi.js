@@ -1,5 +1,11 @@
 import type { IdApiStatus, StudentTaskSummary, StudyReportForm, StudyUser, LoginContinueStatus } from "../dist/index.js"
 import type {
+  ClassiClient, SchoolLoginOptions, AssignedQuestionnaire, AnsweredQuestionnaire,
+  QuestionnaireInfo, QuestionnaireDetail, QuestionnaireText, ActivityRecordDetail,
+  PortfolioTemplate, PortfolioMark, GraduationMessageStatus, KarteTestSummary,
+  KarteBenesseExam, KarteTestDetailParams,
+} from "../dist/index.js"
+import type {
   AdaptiveMissionSummary, AdaptiveMission, TodayMissions, DailyMissionStatus,
   AdaptiveWeeklyReport, DailyMissionRecord, RecommendedStudentTask,
   CareerTrainingCategory, QualificationTrainingCategory, KoumuinQuestionSections,
@@ -60,3 +66,45 @@ const videoCategory: VideoCategory = "CATEGORY_DAIGAKU_NYUSHI"
 const videos: VideosByCategory = { pageInfo: { hasNextPage: false, endCursor: null, __typename: "" }, totalCount: 0, nodes: [], __typename: "" }
 const video: VideoDetail = { id: "", title: "", __typename: "", durationSeconds: 1, expiringEmbedding: { playerURL: "", expiresAtEpoch: 1, __typename: "" } }
 void [missionSummary, mission, today, daily, weekly, record, recommended, career, qualification, sections, unrecorded, messages, exams, uploadLimit, groupYear, subjects, ages, questionnaires, spaces, storyCategory, comments, videoCategory, videos, video]
+
+const loginOptions: SchoolLoginOptions = {
+  password: { recaptcha_required: { teacher: false, student: false, parent: false } },
+  password_reset_by_email: { teacher: false, student: false, parent: false },
+}
+const answered: AnsweredQuestionnaire = { distribution_id: "distribution", distribution_at: "", creator_id: "creator", group_id: "group", group_name: "Synthetic", questionnaire_name: "Synthetic", questionnaire_category: "", submission_at: "", create_user_name: "Synthetic" }
+const assigned: AssignedQuestionnaire = { ...answered, deadline_at: null, distribution_teacher_flag: "0", distribution_student_flag: "1", distribution_guardian_flag: "0", question_count: "1", new_flag: "0", resubmit_flag: "0", answering_flag: 0 }
+const info: QuestionnaireInfo = { id: "distribution", questionnaire_id: "questionnaire", questionnaire_name: "Synthetic", question_count: "1", deadline_at: null, anonymous_flag: "0", file_attachment_flag: 0, questionnaire_category: "", subject_category: null, subject: null, big_teaching_unit: null, middle_teaching_unit: null, small_teaching_unit: null, answer_user_id: null, examination_at: null, submission_at: null }
+const text: QuestionnaireText = { id: "text", type: null, src: null, text: "Synthetic" }
+const questionnaireDetail: QuestionnaireDetail = {
+  distributor_id: "distributor",
+  test_data: { type: "synthetic", id: "questionnaire", creator: "creator", title: "Synthetic", description: [text], sections: [{ type: "synthetic", id: "section", creator: "creator", title: "Synthetic", description: [], body: [text], commentary: [], attached: [], questions: [{ body: [text], format: { type: "synthetic", required: false, answer_options: [text], label: ["Synthetic"], after_label: null } }, { body: [], format: { type: "synthetic", required: false } }], point: "0", target_time: 0, copyright: null, format_version: "synthetic" }], attached: [], copyright: null, format_version: "synthetic" },
+  test_result_data: { sections: [] },
+}
+const activity: ActivityRecordDetail = { id: 7, category_id: null, record_type: "synthetic", create_user_id: 7, update_user_id: null, space_id: null, published: false, self_assessments_count: 0, teacher_assessments_count: 0, cross_assessments_count: 0, assessments_count: 0, record: { id: 7, title: "Synthetic", content: "Synthetic", created_at: "", updated_at: null }, category_name: null, albums: [], created_at: "", updated_at: null }
+const activityId: number = activity.id
+const responseActivity: ActivityRecordDetail = { ...activity, update_user_id: 7, record: { id: 8, title: "Synthetic", created_at: "", updated_at: null, questions: [{ text: "Synthetic", src: null }], answers: [{ text: "Synthetic", attached: null, attached_file_name: null }] } }
+const template: PortfolioTemplate = { id: 7, title: "Synthetic", content: "Synthetic", sort_number: 0 }
+const mark: PortfolioMark = { id: 7, name: "Synthetic", icon: "synthetic" }
+const graduationStatus: GraduationMessageStatus = { is_delivered: false }
+const metadata: KarteTestDetailParams = { name: "Synthetic", exam_date: "2030-01-01", national_display_code: "N", prefecture_display_code: "P", school_display_code: "S", gtz_output_flg: "0" }
+const benesseExam: KarteBenesseExam = { id: "synthetic-exam", name: "Synthetic", exam_date: "2030-01-01", national_display_code: "N", prefecture_display_code: "P", school_display_code: "S", gtz_output_flg: "0", for_teacher: false }
+const regularTest: KarteTestSummary = { id: "synthetic-test", kind: 1, name: "Synthetic", start_on: "", end_on: "", date: "", detail: { labels: [], kind: { id: 7, name: "Synthetic", identifier: "synthetic" } } }
+const benesseTest: KarteTestSummary = { ...regularTest, kind: "synthetic", detail: { bc_results: { exam: benesseExam } } }
+declare const client: ClassiClient
+const loginOptionsResult: Promise<SchoolLoginOptions> = client.id.schoolLoginOptions()
+const assignedResult: Promise<AssignedQuestionnaire[]> = client.platform.assignedQuestionnaires()
+const answeredResult: Promise<AnsweredQuestionnaire[]> = client.platform.answeredQuestionnaires()
+const infoResult: Promise<QuestionnaireInfo> = client.platform.questionnaireInfo("distribution", "group")
+const detailResult: Promise<QuestionnaireDetail> = client.platform.questionnaireDetail("distribution")
+const bookmarksResult: Promise<unknown[]> = client.platform.bookmarks()
+const activityResult: Promise<ActivityRecordDetail> = client.portfolio.activityRecord(7)
+const templatesResult: Promise<{ templates: PortfolioTemplate[] }> = client.portfolio.templates()
+const marksResult: Promise<{ marks: PortfolioMark[] }> = client.portfolio.marks()
+const statusResult: Promise<GraduationMessageStatus> = client.portfolio.graduationMessageStatus()
+const urlResult: Promise<{ url: string }> = client.karte.trainingBenesseTestUrl()
+client.karte.testDetail("user", benesseExam.id, metadata)
+client.karte.tests("user", 1, "classroom")
+client.karte.pathways("user", 1, "classroom")
+client.platform.groups(2030)
+client.platform.newMessages(2030)
+void [loginOptions, assigned, answered, info, questionnaireDetail, activity, activityId, responseActivity, template, mark, graduationStatus, regularTest, benesseTest, loginOptionsResult, assignedResult, answeredResult, infoResult, detailResult, bookmarksResult, activityResult, templatesResult, marksResult, statusResult, urlResult]

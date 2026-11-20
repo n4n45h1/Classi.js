@@ -46,6 +46,52 @@ export interface StoryComments {
   meta: { next_id: unknown }
 }
 
+export interface ActivityRecordDetail {
+  id: number
+  category_id: number | null
+  record_type: string
+  create_user_id: number
+  update_user_id: number | null
+  space_id: number | null
+  published: boolean
+  self_assessments_count: number
+  teacher_assessments_count: number
+  cross_assessments_count: number
+  assessments_count: number
+  record: {
+    id: number
+    title: string
+    created_at: string
+    updated_at: null
+    content?: string
+    questions?: { text: string; src: null }[]
+    answers?: { text: string; attached: null; attached_file_name: null; src?: null }[]
+    [k: string]: unknown
+  }
+  category_name: string | null
+  albums: unknown[]
+  created_at: string
+  updated_at: null
+  [k: string]: unknown
+}
+
+export interface PortfolioTemplate {
+  id: number
+  title: string
+  content: string
+  sort_number: number
+}
+
+export interface PortfolioMark {
+  id: number
+  name: string
+  icon: string
+}
+
+export interface GraduationMessageStatus {
+  is_delivered: boolean
+}
+
 export class PortfolioApi {
   constructor(private http: Http) {}
 
@@ -60,6 +106,22 @@ export class PortfolioApi {
 
   userInfo(): Promise<PortfolioUserInfo> {
     return this.call("GET", "/api/v1/user_info")
+  }
+
+  activityRecord(id: number | string): Promise<ActivityRecordDetail> {
+    return this.call("GET", `/api/v1/activity_records/${encodeURIComponent(String(id))}`)
+  }
+
+  templates(): Promise<{ templates: PortfolioTemplate[] }> {
+    return this.call("GET", "/api/v1/templates")
+  }
+
+  marks(): Promise<{ marks: PortfolioMark[] }> {
+    return this.call("GET", "/api/v2/marks")
+  }
+
+  graduationMessageStatus(): Promise<GraduationMessageStatus> {
+    return this.call("GET", "/api/v2/student/graduation_messages/delivered_status")
   }
 
   spaces(page = 1): Promise<StudentSpaces> {
@@ -99,14 +161,34 @@ export class PortfolioApi {
   }
 }
 
+export interface KarteTestDetailParams {
+  name?: string
+  exam_date?: string
+  national_display_code?: string
+  prefecture_display_code?: string
+  school_display_code?: string
+  gtz_output_flg?: string
+}
+
+export interface KarteBenesseExam extends Required<KarteTestDetailParams> {
+  id: string
+  for_teacher: boolean
+}
+
 export interface KarteTestSummary {
   id: string
-  kind: number
+  kind: number | string
   name: string
   start_on: string
   end_on: string
   date: string
-  detail: { labels: unknown[]; kind: { id: number; name: string; identifier: string } }
+  detail: {
+    labels?: unknown[]
+    kind?: { id: number; name: string; identifier: string }
+    bc_results?: { exam: KarteBenesseExam }
+    io_results?: unknown
+    answer_paper_metadata?: unknown[]
+  }
 }
 
 export class KarteApi {
@@ -121,20 +203,31 @@ export class KarteApi {
     return res.data
   }
 
-  tests(userId: number | string, kind: number): Promise<KarteTestSummary[]> {
-    return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/tests?kind=${kind}`)
+  tests(userId: number | string, kind: number, classroomId?: number | string): Promise<KarteTestSummary[]> {
+    const filter = classroomId === undefined ? "" : `&classroom_id=${encodeURIComponent(String(classroomId))}`
+    return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/tests?kind=${kind}${filter}`)
   }
 
-  testDetail(userId: number | string, examId: string): Promise<unknown> {
-    return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/tests/${encodeURIComponent(examId)}`)
+  testDetail(userId: number | string, examId: string, params: KarteTestDetailParams = {}): Promise<unknown> {
+    const query = new URLSearchParams()
+    for (const key of ["name", "exam_date", "national_display_code", "prefecture_display_code", "school_display_code", "gtz_output_flg"] as const) {
+      if (params[key] !== undefined) query.set(key, params[key])
+    }
+    const suffix = query.toString()
+    return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/tests/${encodeURIComponent(examId)}${suffix ? `?${suffix}` : ""}`)
+  }
+
+  trainingBenesseTestUrl(): Promise<{ url: string }> {
+    return this.call("GET", "/training_benesse_test_url")
   }
 
   subjectLearningReports(userId: number | string): Promise<unknown> {
     return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/subject_learning_reports`)
   }
 
-  pathways(userId: number | string, type = 1): Promise<unknown> {
-    return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/pathways?type=${type}`)
+  pathways(userId: number | string, type = 1, classroomsId?: number | string): Promise<unknown> {
+    const filter = classroomsId === undefined ? "" : `&classrooms_id=${encodeURIComponent(String(classroomsId))}`
+    return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/pathways?type=${type}${filter}`)
   }
 
   questionnaires(userId: number | string, formatType = 1): Promise<unknown> {

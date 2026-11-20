@@ -4,6 +4,70 @@ Safe calls were made with the provisioned account using `ClassiClient.login()`.
 No credentials, session data, or personal response values are retained here.
 Responses were inspected by field names, primitive types and array lengths only.
 
+## HAR-driven read additions
+
+Compared endpoint and field names with the owner's offline HAR, then verified
+using the provisioned test account through `ClassiClient.login()` and
+`ClassiClient.fromSession()`. No owner-account IDs, cookies, tokens, personal
+values or returned destination URLs were copied into source or fixtures.
+All new fixtures are synthetic.
+
+After login a fetch guard allowed GETs and the existing read-only portfolio
+search POST only. Discovery IDs came from the test account's live lists and
+account information, never from the HAR. No questionnaire was started, saved
+or submitted; no bookmarks, read markers or other state changes were sent.
+The Benesse resolver returned JSON through a plain GET; its returned URL was
+not logged, saved, opened or followed.
+
+New method results:
+
+- IdApi.schoolLoginOptions: HTTP 200; unwraps the ID success/data envelope.
+- PlatformApi.assignedQuestionnaires: HTTP 200.
+- PlatformApi.answeredQuestionnaires: HTTP 200.
+- PlatformApi.questionnaireInfo: HTTP 200 with IDs from the assigned list.
+- PlatformApi.questionnaireDetail: HTTP 403 for an assigned questionnaire;
+  HTTP 401 for an already answered questionnaire. No successful test-account
+  detail response was obtained. The route and declared success shape come
+  from the HAR's HTTP 200 response. No attempt/header was created to bypass
+  access restrictions; no change to CSRF behavior was attempted. Whether
+  attempt state, permissions or headers explain these statuses is unverified.
+- PlatformApi.bookmarks: HTTP 200; the HAR sample was empty, so elements
+  remain unknown.
+- PortfolioApi.activityRecord: HTTP 200, ID discovered by read-only search.
+- PortfolioApi.templates: HTTP 200.
+- PortfolioApi.marks: HTTP 200.
+- PortfolioApi.graduationMessageStatus: HTTP 200.
+- KarteApi.trainingBenesseTestUrl: HTTP 200.
+
+Existing wrapper extensions:
+
+- PlatformApi.groups(year) and newMessages(year): HTTP 200 each; year obtained
+  from groupYears. Omitting year preserves the old route.
+- KarteApi.tests with classroom_id and pathways with classrooms_id:
+  HTTP 200 each; classroom obtained from test-account platform user info.
+- KarteApi.testDetail now accepts optional name, exam_date,
+  national_display_code, prefecture_display_code, school_display_code and
+  gtz_output_flg. Query values are encoded; omitting the object preserves the
+  old request. One Benesse exam discovered through tests(kind 3) returned
+  HTTP 200 **both without and with metadata**. A regular test discovered
+  through tests(kind 1), using the original signature, still returned HTTP 500.
+  Thus the metadata option does not establish a fix for the earlier 500s;
+  the regular-test failure remains unresolved. No endpoint was replaced.
+- KarteTestSummary now accepts numeric/string kind and optional regular-test
+  fields or bc_results.exam. Existing method positional arguments remain
+  valid; callers accessing labels/kind must handle their absence.
+
+The HAR shows platform x-xsrf-token and, on selected writes, x-csrf-token
+obtained from GET /api/v2/csrf/token. Existing write wrappers omit that flow.
+**Unverified:** whether otherwise identical header-free library writes fail.
+No CSRF acquisition wrapper or write behavior was changed, and no live write
+control was attempted. Analytics and badge-notify routes were not added.
+
+Offline route tests cover GET-only behavior, no request bodies or new CSRF
+headers, defaults, optional filters, query/path encoding, empty responses and
+HTTP errors. Declaration fixtures cover both Karte result families and the
+new response types. README examples were not visually rendered for this change.
+
 ## Coverage
 
 | Surface | Result |
