@@ -8,7 +8,7 @@ export {
   type QuestionAnswerPayload,
   type AnswerInput,
 } from "./training.js"
-export { StudyApi, type StudyReportForm, type TargetGtz } from "./study.js"
+export { StudyApi, type StudyReportForm, type StudyUser, type TargetGtz } from "./study.js"
 export {
   PlatformApi,
   type PlatformUserInfo,

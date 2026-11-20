@@ -5,6 +5,7 @@ export interface LoginContinueStatus {
   tos_required: boolean
   email_registration_guide_required: boolean
   benesse_account_invitation_code_required: boolean
+  totp_required?: boolean
 }
 
 export interface LoginMethod {
@@ -13,7 +14,7 @@ export interface LoginMethod {
 }
 
 export interface IdApiStatus {
-  old_id: string
+  old_id: number
   username: string
   account_type: string
   school_name: string
@@ -49,7 +50,7 @@ export interface StudentTaskSummary {
   id: number
   progressStatus: "notStarted" | "inProgress" | "completed"
   isCompleted: boolean
-  subjectCategory: SubjectCategory
+  subjectCategory: Omit<SubjectCategory, "id">
   task: {
     type: string
     id: number

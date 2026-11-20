@@ -77,8 +77,10 @@ for (const t of tasks) {
 ### 問題に回答して結果を見る
 
 ```ts
+if (!tasks.length) throw new Error("課題がありません")
 const detail = await client.training.lessonStudentTask(tasks[0].id)
 const topic = detail.learningTopics[0]
+if (!topic?.nextQuestionSection) throw new Error("未回答の問題がありません")
 
 const section = await client.training.questionSection(topic.nextQuestionSection.id)
 const q = section.questions[0]
