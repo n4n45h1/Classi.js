@@ -238,13 +238,29 @@ if (videos.pageInfo.hasNextPage) {
 
 - `client.id.schoolLoginOptions()`：学校のロール別 CAPTCHA・メールによるパスワード再設定の設定
 - `client.karte.tests(userId, kind, classroomId?)`：クラスを指定したテスト結果の一覧
+- `client.karte.testResults(userId, testId, kind, classroomId?)`：一覧から ID が一致するテストを取得（見つからない場合は `undefined`）
 - `client.karte.pathways(userId, type = 1, classroomsId?)`：クラスを指定した進路情報
-- `client.karte.testDetail(userId, examId, params?)`：テスト結果の詳細
+- `client.karte.testDetail(userId, examId, params?)`：非推奨。互換性のために残している詳細エンドポイント
 - `client.karte.trainingBenesseTestUrl()`：ベネッセのテスト・トレーニングへの遷移先 URL
 
 `KarteTestSummary.kind` は数値または文字列です。
 通常の結果には `detail.labels`・`detail.kind`、ベネッセの結果には
 `detail.bc_results.exam` が含まれるため、各フィールドの有無を確認してください。
+`testDetail` は通常のテスト ID で HTTP 500 を返すため非推奨です（ベネッセのテストでは取得可能）。
+Classi の Web UI と同様に、`tests` のレスポンスに含まれる結果を利用してください。
+`testResults` は `tests(userId, kind, classroomId?)` を1回呼び、ID が一致する
+`KarteTestSummary` 全体を返します。通常の得点などは `detail.io_results` に含まれますが、
+形式が未確定のため型は `unknown` です。ベネッセのメタデータなども変換せず保持します。
+HTTP エラーは `tests` と同じく `ClassiError` として伝播します。
+
+```ts
+const result = await client.karte.testResults(userId, testId, 1)
+if (result) {
+  const scores = result.detail.io_results // unknown: 使用前に形式を確認
+}
+// 一覧を取得済みなら、再リクエストせず tests.find(test => test.id === testId) も利用可能
+```
+
 `testDetail` の第3引数では `name`、`exam_date`、`national_display_code`、
 `prefecture_display_code`、`school_display_code`、`gtz_output_flg` を指定できます。
 これらは一覧の `detail.bc_results.exam` から取得できます。
