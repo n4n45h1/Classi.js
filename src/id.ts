@@ -13,8 +13,23 @@ export interface LoginResult {
   status: LoginContinueStatus
 }
 
+export interface SchoolLoginOptions {
+  password: { recaptcha_required: { teacher: boolean; student: boolean; parent: boolean } }
+  password_reset_by_email: { teacher: boolean; student: boolean; parent: boolean }
+}
+
 export class IdApi {
   constructor(private http: Http) {}
+
+  async schoolLoginOptions(): Promise<SchoolLoginOptions> {
+    const res = await this.http.request<{ success: boolean; data: SchoolLoginOptions }>(
+      "GET", `${IDAPI}/school/login_options`, { origin: ID }
+    )
+    if (res.status < 200 || res.status >= 300 || !res.data?.success || !res.data.data) {
+      throw new ClassiError("failed to fetch school login options", res.status, `${IDAPI}/school/login_options`, res.data)
+    }
+    return res.data.data
+  }
 
   private async csrf(): Promise<string> {
     const { status, data } = await this.http.request<{ success: boolean; data: string }>("GET", `${IDAPI}/csrf_token`, {

@@ -92,6 +92,94 @@ export interface SchoolageList {
 
 export type QuestionnaireCategories = Record<string, { id: number; name: string; order: number }>
 
+export interface AnsweredQuestionnaire {
+  distribution_id: string
+  distribution_at: string
+  creator_id: string
+  group_id: string
+  group_name: string
+  questionnaire_name: string
+  questionnaire_category: string
+  submission_at: string
+  create_user_name: string
+}
+
+export interface AssignedQuestionnaire extends Omit<AnsweredQuestionnaire, "submission_at"> {
+  deadline_at: string | null
+  distribution_teacher_flag: string
+  distribution_student_flag: string
+  distribution_guardian_flag: string
+  question_count: string
+  new_flag: string
+  resubmit_flag: string
+  answering_flag: number
+}
+
+export interface QuestionnaireInfo {
+  id: string
+  questionnaire_id: string
+  questionnaire_name: string
+  question_count: string
+  deadline_at: string | null
+  anonymous_flag: string
+  file_attachment_flag: number
+  questionnaire_category: string
+  subject_category: null
+  subject: null
+  big_teaching_unit: null
+  middle_teaching_unit: null
+  small_teaching_unit: null
+  answer_user_id: string | null
+  examination_at: string | null
+  submission_at: null
+}
+
+export interface QuestionnaireText {
+  id: string
+  type: null
+  src: null
+  text: string
+}
+
+export interface QuestionnaireDetail {
+  distributor_id: string
+  test_data: {
+    type: string
+    id: string
+    creator: string
+    title: string
+    description: QuestionnaireText[]
+    sections: {
+      type: string
+      id: string
+      creator: string
+      title: string
+      description: QuestionnaireText[]
+      body: QuestionnaireText[]
+      commentary: QuestionnaireText[]
+      attached: unknown[]
+      questions: {
+        body: QuestionnaireText[]
+        format: {
+          type: string
+          required: boolean
+          answer_options?: QuestionnaireText[]
+          label?: string[]
+          after_label?: null
+        }
+      }[]
+      point: string
+      target_time: number
+      copyright: null
+      format_version: string
+    }[]
+    attached: unknown[]
+    copyright: null
+    format_version: string
+  }
+  test_result_data: { sections: unknown[] }
+}
+
 export class PlatformApi {
   constructor(private http: Http) {}
 
@@ -136,16 +224,22 @@ export class PlatformApi {
     return this.call("POST", "/communication/api/v1/notification/service/allread", {})
   }
 
-  groups(): Promise<{ groups: GroupSummary[] }> {
-    return this.call("GET", "/api/v2/groups/")
+  groups(year?: number | string): Promise<{ groups: GroupSummary[] }> {
+    const query = year === undefined ? "" : `?year=${encodeURIComponent(String(year))}`
+    return this.call("GET", `/api/v2/groups/${query}`)
   }
 
   groupMessages(groupId: number, page = 1): Promise<GroupMessages> {
     return this.call("GET", `/api/v2/groups/${groupId}/messages?page=${page}`)
   }
 
-  newMessages(): Promise<unknown[]> {
-    return this.call("GET", "/api/v2/groups/newmessages")
+  newMessages(year?: number | string): Promise<unknown[]> {
+    const query = year === undefined ? "" : `?year=${encodeURIComponent(String(year))}`
+    return this.call("GET", `/api/v2/groups/newmessages${query}`)
+  }
+
+  bookmarks(): Promise<unknown[]> {
+    return this.call("GET", "/api/v2/groups/bookmarks")
   }
 
   groupActivities(): Promise<unknown[]> {
@@ -207,6 +301,22 @@ export class PlatformApi {
 
   questionnaireCategories(): Promise<QuestionnaireCategories> {
     return this.call("GET", "/api/questionnaire/categories")
+  }
+
+  assignedQuestionnaires(): Promise<AssignedQuestionnaire[]> {
+    return this.call("GET", "/api/questionnaire/examination/list")
+  }
+
+  answeredQuestionnaires(): Promise<AnsweredQuestionnaire[]> {
+    return this.call("GET", "/api/questionnaire/answered/list")
+  }
+
+  questionnaireInfo(distributionId: number | string, groupId: number | string): Promise<QuestionnaireInfo> {
+    return this.call("GET", `/api/questionnaire/examination/${encodeURIComponent(String(distributionId))}/${encodeURIComponent(String(groupId))}/info`)
+  }
+
+  questionnaireDetail(distributionId: number | string): Promise<QuestionnaireDetail> {
+    return this.call("GET", `/api/questionnaire/examination/${encodeURIComponent(String(distributionId))}/detail`)
   }
 
   cbankList(page = 1): Promise<unknown> {
