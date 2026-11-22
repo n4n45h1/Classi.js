@@ -203,6 +203,18 @@ test("platform: second CSRF rejection is final", async (t) => {
   assert.equal(calls.length, 3)
 })
 
+test("platform: Japanese posting restriction is preserved without a CSRF retry", async (t) => {
+  const body = { message: "投稿が制限されています。" }
+  const calls = mockFetch(t, () => json(body, 403))
+  await assert.rejects(() => client({ platform: "cached" }).platform.sendGroupMessage(1, "one"), (error) => {
+    assert.ok(error instanceof ClassiError)
+    assert.equal(error.status, 403)
+    assert.deepEqual(error.body, body)
+    return true
+  })
+  assert.equal(calls.length, 1)
+})
+
 test("platform: permission 403 and network failures are never retried", async (t) => {
   let failNetwork = false
   const calls = mockFetch(t, () => {
@@ -302,6 +314,23 @@ for (const [name, path, method, payload, invoke] of trainingCases) {
     })
   }
 }
+
+test("training: legacy endpoint HTML 404 is preserved without retry or automatic migration", async (t) => {
+  const body = "<!doctype html><title>The page you were looking for doesn't exist (404 Not found)</title>"
+  const calls = mockFetch(t, () => new Response(body, { status: 404, headers: { "Content-Type": "text/html" } }))
+  await assert.rejects(
+    () => client({ training: "cached" }).training.submitLegacySelfTrainingAnswers(4, [{ ...numbered[0], is_correct: true }], "self_training_drill"),
+    (error) => {
+      assert.ok(error instanceof ClassiError)
+      assert.equal(error.status, 404)
+      assert.equal(error.body, body)
+      assert.equal(error.endpoint, "/student/question_sections/4/answers?submission_context=self_training_drill")
+      return true
+    },
+  )
+  assert.equal(calls.length, 1)
+  assert.equal(calls[0].url, `${TRAINING}/student/question_sections/4/answers?submission_context=self_training_drill`)
+})
 
 test("training: optional contexts are omitted; personalized count is optional", async (t) => {
   const calls = mockFetch(t)

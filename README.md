@@ -200,13 +200,17 @@ Web UI に従い、グループ投稿には明示トークンと cookie 由来 X
 曜日は `monday`〜`sunday`（空でない配列）です。
 既存の `submitAnswers(topicId, SubmitPayload)` はそのまま利用可能です。
 旧自主学習 API の context は `self_training` / `self_training_drill` のみです。
-新規利用では `submitSelfTrainingAnswers` を使ってください。
+旧エンドポイントは実サービス検証で HTTP 404 を返しました。新規利用では
+`submitSelfTrainingAnswers` を使ってください。採点方式が異なるため自動移行は行いません。
 
 `study.saveReportForm(date, form)` は日付をボディへ含めます。
 `study.setTargetGtz(["B1"])` は既存シグネチャを保持し、`target_gtz_name` として一件送信します。
 `setTargetGtz("B1")` も利用できます。空配列・複数件は送信せず `ClassiError` を投げます。
-書き込み API の検証は mocked-fetch テストのみで、実サービスでの送信・権限・
-レスポンス構造やグループ POST のサーバー許容動作は未検証です。
+全メソッドに mocked-fetch テストがあります。所有者承認の実サービス検証では、
+通常・資格検定・公務員・就職の自主学習、授業課題の回答、デイリーミッション回答、ミッション操作、
+添付アップロード、グループ既読、学習記録・GTZ・バッジ・通知一括既読を確認しました。
+グループ投稿は選択グループの投稿制限で HTTP 403 となり、成功時の動作は未検証です。
+コメント・トークルーム送信／既読・個別最適化課題／テスト／おすすめ演習の回答は別途検証が必要です。
 
 ### 追加の読み取り API
 

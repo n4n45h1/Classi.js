@@ -301,6 +301,7 @@ export class TrainingApi {
     return this.call("POST", `/student/self_training/question_sections/${sectionId}/answers${query}`, answers)
   }
 
+  /** @deprecated The legacy endpoint may return 404; use submitSelfTrainingAnswers instead. */
   submitLegacySelfTrainingAnswers(sectionId: number, answers: LegacyNumberedQuestionAnswers[], context?: LegacySelfTrainingSubmissionContext): Promise<{ id: number }> {
     const query = context === undefined ? "" : `?submission_context=${encodeURIComponent(context)}`
     return this.call("POST", `/student/question_sections/${sectionId}/answers${query}`, answers)
