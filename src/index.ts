@@ -4,6 +4,7 @@ export { CookieJar } from "./cookies.js"
 export { IdApi, type Credentials, type LoginResult, type SchoolLoginOptions } from "./id.js"
 export {
   TrainingApi,
+  latestCompletedIsoWeek,
   type SubmitPayload,
   type QuestionAnswerPayload,
   type AnswerInput,
