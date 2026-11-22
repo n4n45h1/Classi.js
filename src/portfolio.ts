@@ -208,6 +208,13 @@ export class KarteApi {
     return this.call("GET", `/api/users/${encodeURIComponent(String(userId))}/tests?kind=${kind}${filter}`)
   }
 
+  /** Returns the matching tests entry, including embedded results, or undefined if not found. */
+  async testResults(userId: number | string, testId: number | string, kind: number, classroomId?: number | string): Promise<KarteTestSummary | undefined> {
+    const tests = await this.tests(userId, kind, classroomId)
+    return tests.find(test => String(test.id) === String(testId))
+  }
+
+  /** @deprecated Use testResults(userId, testId, kind, classroomId?) or tests() for embedded results. Regular test IDs can return HTTP 500 from this endpoint. */
   testDetail(userId: number | string, examId: string, params: KarteTestDetailParams = {}): Promise<unknown> {
     const query = new URLSearchParams()
     for (const key of ["name", "exam_date", "national_display_code", "prefecture_display_code", "school_display_code", "gtz_output_flg"] as const) {
