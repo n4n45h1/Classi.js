@@ -53,6 +53,71 @@ export interface SubmitPayload {
   question_section_id: number
 }
 
+export interface TrainingAnswerInput {
+  blank_symbol: string | null
+  answer_option_key: string
+}
+
+export interface TrainingQuestionAnswer {
+  id: number
+  answers: TrainingAnswerInput[]
+}
+
+export interface LessonAnswerSubmission {
+  question_section_id: number
+  questions: TrainingQuestionAnswer[]
+}
+
+export interface PersonalizedAnswerSubmission extends LessonAnswerSubmission {
+  current_answer_submissions_count?: number
+}
+
+export interface TaskQuestionSectionAnswers {
+  id: number
+  questions: TrainingQuestionAnswer[]
+}
+
+export interface NumberedQuestionAnswers {
+  question_number: number
+  answers: TrainingAnswerInput[]
+}
+
+export interface LegacyNumberedQuestionAnswers extends NumberedQuestionAnswers {
+  is_correct: boolean
+}
+
+export type LegacySelfTrainingSubmissionContext = "self_training" | "self_training_drill"
+
+export type SelfTrainingSubmissionContext = "self_training" | "self_training_drill" |
+  "self_training_benesse_test_summary" | "self_training_benesse_test_summary_recommendation"
+export type ShikakuSubmissionContext = "self_training_recommended_question" | "self_training_shikaku"
+export type MissionPlan = "catch_up_with_rivals" | "lead_rivals" | "focus_weakness"
+export type MissionDay = "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday" | "sunday"
+
+export interface MissionSettings {
+  learning_minutes: number
+  plan: MissionPlan
+  day_of_weeks: MissionDay[]
+}
+
+export interface CreateMissionPayload extends MissionSettings {
+  learning_target: { type: "subject"; subject_id: number }
+}
+
+export interface UpdatedMission {
+  id: number
+  title: string
+  plan: string
+  learningMinutes: number
+  dayOfWeeks: MissionDay[]
+}
+
+export interface CreatedDailyMission {
+  id: number
+  nextQuestionSection: { id: number; number: number }
+  questionSectionsCount: number
+}
+
 export interface AdaptiveMissionSummary {
   id: number
   title: string
@@ -247,6 +312,66 @@ export class TrainingApi {
       `/student/task_training/lesson_student_task_learning_topics/${topicId}/answer_submissions`,
       payload
     )
+  }
+
+  submitLessonAnswers(topicId: number, payload: LessonAnswerSubmission): Promise<AnswerSubmissionResult> {
+    return this.call("POST", `/student/task_training/lesson_student_task_learning_topics/${topicId}/answer_submissions`, payload)
+  }
+
+  submitPersonalizedAnswers(taskId: number, payload: PersonalizedAnswerSubmission): Promise<AnswerSubmissionResult> {
+    return this.call("POST", `/student/task_training/personalized_student_tasks/${taskId}/answer_submissions`, payload)
+  }
+
+  submitTaskTestAnswers(taskId: number, payload: TaskQuestionSectionAnswers[]): Promise<void> {
+    return this.call("POST", `/student/task_training/student_tasks/${taskId}/test_answer_submissions`, payload)
+  }
+
+  submitRecommendedAnswers(taskId: number, sectionId: number, payload: TaskQuestionSectionAnswers): Promise<{ id: number }> {
+    return this.call("POST", `/student/task_training/student_tasks/${taskId}/question_sections/${sectionId}/recommended_question_section_answer_submissions`, payload)
+  }
+
+  submitSelfTrainingAnswers(sectionId: number, answers: NumberedQuestionAnswers[], context?: SelfTrainingSubmissionContext): Promise<{ id: number }> {
+    const query = context === undefined ? "" : `?submission_context=${encodeURIComponent(context)}`
+    return this.call("POST", `/student/self_training/question_sections/${sectionId}/answers${query}`, answers)
+  }
+
+  /** @deprecated The legacy endpoint may return 404; use submitSelfTrainingAnswers instead. */
+  submitLegacySelfTrainingAnswers(sectionId: number, answers: LegacyNumberedQuestionAnswers[], context?: LegacySelfTrainingSubmissionContext): Promise<{ id: number }> {
+    const query = context === undefined ? "" : `?submission_context=${encodeURIComponent(context)}`
+    return this.call("POST", `/student/question_sections/${sectionId}/answers${query}`, answers)
+  }
+
+  submitShikakuAnswers(sectionId: number, answers: NumberedQuestionAnswers[], context?: ShikakuSubmissionContext): Promise<{ id: number }> {
+    const query = context === undefined ? "" : `?submission_context=${encodeURIComponent(context)}`
+    return this.call("POST", `/student/shikaku_self_training/question_sections/${sectionId}/answers${query}`, answers)
+  }
+
+  submitKoumuinAnswers(sectionId: number, answers: NumberedQuestionAnswers[]): Promise<{ id: number }> {
+    return this.call("POST", `/student/koumuin_self_training/question_sections/${sectionId}/answers`, answers)
+  }
+
+  submitShushokuAnswers(sectionId: number, answers: NumberedQuestionAnswers[]): Promise<{ id: number }> {
+    return this.call("POST", `/student/shushoku_self_training/question_sections/${sectionId}/answers`, answers)
+  }
+
+  submitDailyMissionAnswers(missionId: number, payload: LessonAnswerSubmission): Promise<AnswerSubmissionResult> {
+    return this.call("POST", `/student/adaptive_training/daily_missions/${missionId}/answer_submissions`, payload)
+  }
+
+  createMission(payload: CreateMissionPayload): Promise<{ id: number }> {
+    return this.call("POST", "/student/adaptive_training/missions", payload)
+  }
+
+  updateMission(missionId: number, payload: MissionSettings): Promise<UpdatedMission> {
+    return this.call("PUT", `/student/adaptive_training/missions/${missionId}`, payload)
+  }
+
+  deleteMission(missionId: number): Promise<void> {
+    return this.call("DELETE", `/student/adaptive_training/missions/${missionId}`)
+  }
+
+  createDailyMission(missionId: number): Promise<CreatedDailyMission> {
+    return this.call("POST", `/student/adaptive_training/missions/${missionId}/daily_missions`)
   }
 
   answerResult(answerId: number): Promise<AnswerResult> {

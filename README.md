@@ -131,6 +131,87 @@ await client.study.saveReportForm("2026-09-04", {
 })
 ```
 
+### 書き込み API（送信・提出・既読）
+
+**警告: 以下は実際に先生・クラスメイトへメッセージや回答を送信し、
+提出状況・既読・学習計画などを変更します。テスト目的で実アカウントから
+呼び出さないでください。送信前に宛先と内容を必ず確認してください。**
+
+`client.platform`:
+
+| メソッド | 動作 |
+| --- | --- |
+| `sendGroupMessage(groupId, message, attachments?, reservedId?)` | 校内グループへ新規投稿 |
+| `commentOnGroupMessage(groupId, messageId, message, attachments?)` | グループ投稿へコメント |
+| `sendTalkroomMessage(roomId, message, attachments?)` | 既存トークルームへ送信（返信も同じ API） |
+| `uploadAttachment(blob, filename?)` | `file` フィールドで multipart アップロード |
+| `markGroupMessageRead(messageId)` | グループ投稿の既読更新（`markSeen` の「見ました」とは別） |
+| `markTalkroomMessageRead(roomId, messageId)` | トークの既読更新。**GET ですが状態を変更します** |
+| `markAllServiceNotificationsRead()` | 全通知を既読にする |
+
+添付ファイルなしの場合は空配列が送信されます。アップロード結果は
+`GroupAttachment` としてそのまま渡せます。トーク用には次のように変換します。
+
+```ts
+// これらを実行するとアップロード・送信されます。
+const file = await client.platform.uploadAttachment(new Blob(["内容"], { type: "text/plain" }), "note.txt")
+await client.platform.sendTalkroomMessage(roomId, "添付資料です", [{
+  entry_cd: file.entry_cd,
+  type: file.file_type,
+  download_url: file.download_uri,
+  file_name: file.name,
+}])
+```
+
+グループ投稿・コメントは Web UI に合わせ、form の Content-Type で **JSON 文字列**
+を送信します（通常のフォームエンコードではありません）。トークは JSON です。
+明示的な CSRF トークンは自動取得・キャッシュされ、`invalidateCsrf()` で破棄できます。
+Web UI に従い、グループ投稿には明示トークンと cookie 由来 XSRF ヘッダー、
+コメント・アップロード・既読には cookie 由来ヘッダー、トーク送信には明示トークンを使います。
+422 または CSRF を示す 403 の場合のみトークンを再取得して一度リトライします。
+通信エラー・その他の 403 は自動再送しません。教師専用トークルーム作成は提供しません。
+
+`client.training`（すべて CSRF 自動取得付き）:
+
+| メソッド | ペイロード |
+| --- | --- |
+| `submitLessonAnswers(topicId, payload)` | `LessonAnswerSubmission`: `{question_section_id, questions}` |
+| `submitPersonalizedAnswers(taskId, payload)` | 上記 + 任意の `current_answer_submissions_count` |
+| `submitTaskTestAnswers(taskId, sections)` | `TaskQuestionSectionAnswers[]`: `[{id, questions}]` |
+| `submitRecommendedAnswers(taskId, sectionId, payload)` | `{id, questions}` |
+| `submitSelfTrainingAnswers(sectionId, answers, context?)` | `NumberedQuestionAnswers[]` |
+| `submitLegacySelfTrainingAnswers(sectionId, answers, context?)` | 旧 API（非推奨）。各要素に `is_correct: boolean` が必要 |
+| `submitShikakuAnswers(sectionId, answers, context?)` | 同上（資格検定） |
+| `submitShushokuAnswers(sectionId, answers)` | 同上（就職） |
+| `submitKoumuinAnswers(sectionId, answers)` | 同上（公務員） |
+| `submitDailyMissionAnswers(dailyMissionId, payload)` | `LessonAnswerSubmission` |
+| `createMission(payload)` | `CreateMissionPayload`: 設定 + `learning_target: {type: "subject", subject_id}` |
+| `updateMission(missionId, settings)` | `MissionSettings`: `{learning_minutes, plan, day_of_weeks}` |
+| `deleteMission(missionId)` | ミッション削除 |
+| `createDailyMission(missionId)` | 当日のデイリーミッションを作成 |
+
+`questions` は `[{id, answers: [{blank_symbol: string | null, answer_option_key: string}]}]`、
+自主学習の `answers` は `[{question_number, answers: [...]}]` です。
+`context` はボディではなく `submission_context` クエリで送信します。
+通常の自主学習では `self_training` / `self_training_drill` /
+`self_training_benesse_test_summary` / `self_training_benesse_test_summary_recommendation`、
+資格検定では `self_training_recommended_question` / `self_training_shikaku` を指定できます。
+ミッションの `plan` は `catch_up_with_rivals` / `lead_rivals` / `focus_weakness`、
+曜日は `monday`〜`sunday`（空でない配列）です。
+既存の `submitAnswers(topicId, SubmitPayload)` はそのまま利用可能です。
+旧自主学習 API の context は `self_training` / `self_training_drill` のみです。
+旧エンドポイントは実サービス検証で HTTP 404 を返しました。新規利用では
+`submitSelfTrainingAnswers` を使ってください。採点方式が異なるため自動移行は行いません。
+
+`study.saveReportForm(date, form)` は日付をボディへ含めます。
+`study.setTargetGtz(["B1"])` は既存シグネチャを保持し、`target_gtz_name` として一件送信します。
+`setTargetGtz("B1")` も利用できます。空配列・複数件は送信せず `ClassiError` を投げます。
+全メソッドに mocked-fetch テストがあります。所有者承認の実サービス検証では、
+通常・資格検定・公務員・就職の自主学習、授業課題の回答、デイリーミッション回答、ミッション操作、
+添付アップロード、グループ既読、学習記録・GTZ・バッジ・通知一括既読を確認しました。
+グループ投稿は選択グループの投稿制限で HTTP 403 となり、成功時の動作は未検証です。
+コメント・トークルーム送信／既読・個別最適化課題／テスト／おすすめ演習の回答は別途検証が必要です。
+
 ### 追加の読み取り API
 
 以下のメソッドはデータの取得専用です。ミッションの作成・回答送信、
